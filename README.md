@@ -10,7 +10,7 @@ You can get an impression at https://www.youtube.com/watch?v=ZVbVmCKwYnQ&t=29s
 
 Further robot info at: https://www.instructables.com/CUBOTino-Autonomous-Small-3D-Printed-Rubiks-Cube-R/
 
-An impression of the robot: https://youtu.be/dEOLhvVMcUg
+An impression of the robot: https://youtu.be/dEOLhvVMcUg<br />
 
 
 # How to make the robot:
