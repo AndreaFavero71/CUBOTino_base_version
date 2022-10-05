@@ -14,7 +14,12 @@ An impression of the robot: https://youtu.be/dEOLhvVMcUg .<br /><br /><br />
 
 
 # How to make the robot:
-Follow the instructions the [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br /><br />
+All the needed info are collected in a pdf file [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br /><br />
+Very high level notes:
+3D print without support
+Set the servo to their mid position
+Verify the servos have 180deg range
+For the rotating base (cube holder) the servo has to have around 190deg rotation; If not check the instruction on how to proceed
 
 
 # How to present the cube to the webcam:
