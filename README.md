@@ -16,7 +16,7 @@ An impression of the robot: https://youtu.be/dEOLhvVMcUg
 
 
 # How to make the robot:
-Follow the instructions the [document here](doc/How_to_make_CUBOTino_autonomous_robot_20220625.pdf) , Section 15, Step 1 to 3
+Follow the instructions the [document here](doc/How_to_make_CUBOTino_autonomous_robot_20220625.pdf).<br /><br /><br />
 
 
 # How to present the cube to the webcam:
