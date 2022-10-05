@@ -14,7 +14,7 @@ An impression of the robot: https://youtu.be/dEOLhvVMcUg .<br /><br /><br />
 
 
 # How to make the robot:
-All the needed info are collected in a pdf file [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br />
+All the needed info are collected in a pdf file in the /doc folder: [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br />
 Very high level notes:<br />
 - 3D print without support.<br />
 - Set the servo to their mid position.<br />
