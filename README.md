@@ -3,7 +3,7 @@
 This repo contains the files to build CUBOTino_base_version: a Small, Simple, 3D Printed, Inexpensive Rubik's Cube Solver Robot.<br /><br />
 
 This robot solves the Rubik's cube in less than 90 seconds: Not fast, but again ... it's very simple and rather inexpensive.<br />
-You can get an impression at https://www.youtube.com/watch?v=ZVbVmCKwYnQ&t=29s .<br />
+You can get an impression at https://www.youtube.com/watch?v=ZVbVmCKwYnQ.<br />
 Further robot info at: https://www.instructables.com/CUBOTino-Autonomous-Small-3D-Printed-Rubiks-Cube-R/.<br />
 
 
