@@ -14,9 +14,9 @@ An impression of the robot: https://youtu.be/dEOLhvVMcUg
 
 
 # How to make the robot:
-Follow the instructions the [document here](doc/How_to_make_CUBOTino_autonomous_robot_20220625.pdf).<br /><br /><br />
+Follow the instructions the [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br /><br />
 
 
 # How to present the cube to the webcam:
-
+Work in progress, a movie is going to be available soon.<br />
 
