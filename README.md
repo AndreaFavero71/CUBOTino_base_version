@@ -10,9 +10,9 @@ You can get an impression at https://www.youtube.com/watch?v=ZVbVmCKwYnQ&t=29s
 
 Further robot info at: https://www.instructables.com/CUBOTino-Autonomous-Small-3D-Printed-Rubiks-Cube-R/
 
-An impression of the robot: https://youtu.be/dEOLhvVMcUg<br />
+An impression of the robot: https://youtu.be/dEOLhvVMcUg
 
-
+<br />
 # How to make the robot:
 Follow the instructions the [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20220630.pdf).<br /><br /><br />
 
