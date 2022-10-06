@@ -25,7 +25,7 @@ Video tutorial explaining how to present the cube to the webcam: https://youtu.b
 ![title image](/images/title2_pic.png)
 
 
-The movie is also available at /movies folder of this repo, and can be downloaded.<br />
+The movie is also available at /movies folder of this repo, and can be downloaded.<br /><br />
 
 
 # Searching for something more?
