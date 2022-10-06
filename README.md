@@ -21,5 +21,6 @@ Very high level notes:<br />
 
 
 # How to present the cube to the webcam:
-Work in progress, a movie is going to be available soon.<br />
+https://youtu.be/udr6tryxA_Y.<br />
+The movie is also available at /movies folder of this repo, and can be downloaded.<br />
 
