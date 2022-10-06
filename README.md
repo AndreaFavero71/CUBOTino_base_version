@@ -22,7 +22,7 @@ Very high level notes:<br />
 
 # How to present the cube to the webcam:
 Video tutorial explaining how to present the cube to the webcam: https://youtu.be/udr6tryxA_Y.<br />
-![title image](/images/title2_pic.jpg)
+![title image](/images/title2_pic.png)
 
 
 The movie is also available at /movies folder of this repo, and can be downloaded.<br />
