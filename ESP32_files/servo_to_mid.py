@@ -22,14 +22,14 @@ def swipe_and_center():
     b_servo.duty(mid_pos)           # servo is set to mid position
     t_servo.duty(mid_pos)           # servo is set to mid position
     print(f"\nservos set to their middle position")
-    sleep_ms(800)                   # time for the servos to reach the mid position
+    sleep_ms(1200)                  # time for the servos to reach the mid position
     
     # because of different resolution of servos and accepted value:
     # a 1to2ms servo will stop rotating earlier, and each step will take larger rotation
     # while a 500to2500us servo will rotate for longer time, and each step will take smaller rotation
     
     print(f"\nservos rotating in steps toward one rotation extreme (CCW, from servo point of view)")
-    for i in range(mid_pos, min_500to2500us, -1): # swipe from mid to min position
+    for i in range(mid_pos, min_500to2500us, -1):        # swipe from mid to min position
         b_servo.duty(i)
         t_servo.duty(i)
         sleep_ms(80)
@@ -42,13 +42,15 @@ def swipe_and_center():
         sleep_ms(80)
     sleep_ms(1000)
     
-    print(f"\nservos rotating in steps toward the middle position")
-    for i in range(max_500to2500us, mid_pos, -1): # swipe from max to mid position
+    print(f"\nservos rotating in steps back to their middle position")
+    for i in range(max_500to2500us, mid_pos, -1):        # swipe from max to mid position
         b_servo.duty(i)
         t_servo.duty(i)
         sleep_ms(80)
     
-    print(f"\nservos are at their middle position")
+    print(f"\nservos are back to their middle position")
+    
+
         
 
 
