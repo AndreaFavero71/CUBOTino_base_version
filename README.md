@@ -29,7 +29,7 @@ The movie is also available at /movies folder of this repo, and can be downloade
 
 
 # Searching for something more?
-In case you find this robot too simple, or you're interested to a self-enclosed version, the you can consider the CUBOTino Autonomous version:<br />
+In case you find this robot too simple, or you're interested to a self-enclosed version, then you can consider the CUBOTino Autonomous version:<br />
 - It reuses most of the parts from this Base version !!!<br />
 - Thanks to a camera and a SBC (Raspberry Pi) the robot if fully autonomous.<br />
 - You can see it at: [https://youtu.be/udr6tryxA_Y](https://youtu.be/dEOLhvVMcUg).<br />
