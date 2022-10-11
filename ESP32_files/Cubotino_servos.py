@@ -1,6 +1,6 @@
 """
 #############################################################################################################
-# Andrea Favero April 2022
+# Andrea Favero 11 October 2022
 #
 # This script relates to "CUBOTino", a simpler (and much cheaper) Rubik's cube solver robot than my first one:
 # (https://www.youtube.com/watch?v=oYRXe4NyJqs)
@@ -61,6 +61,7 @@ def init_servo(debug=False):
         t_servo.duty(t_servo_open)    # top servo is positioned in open position at the start
         sleep_ms(700)                 # bottom servo is positioned at home, the starting position
         t_top_cover = 'open'          # variable to track the top cover/lifter position
+        t_servo.duty(0)               # PWM signal interrupted to top servo
         
         b_servo_operable=True         # variable to block/allow bottom servo operation
         b_servo.duty(b_home)          # bottom servo is positioned at home, the starting position   
@@ -69,6 +70,7 @@ def init_servo(debug=False):
         b_servo_home=True             # boolean of bottom servo at home
         b_servo_CW_pos=False          # boolean of bottom servo at full CW position
         b_servo_CCW_pos=False         # boolean of bottom servo at full CCW position
+        b_servo.duty(0)               # PWM signal interrupted to bottom servo 
         robot_init_status = True      # boolean to track the inititialization status of the servos is set true
     else:
         robot_init_status = False     # boolean to track the inititialization status of the servos is set false
@@ -101,8 +103,11 @@ def upload_settings():
             data_list=data.split(',')              # data is split by comma, becoming a list of strings 
                         
             settings=[]                            # empty list to store the list of numerical settings
-            for setting in data_list:              # iteration over the list of strings
-                settings.append(int(setting))      # each string setting is changed to integer and appended to the list of settings
+            for i, setting in enumerate(data_list):# iteration over the list of strings
+                if i<=15:                          # case for the 0 to 15 list elements
+                    settings.append(int(setting))  # each str setting changed to int and appended to the list of settings
+                elif i>=16:                        # case for the 16th onward list elements
+                    settings.append(setting)       # each str setting is appended as is to the list of settings
                             
             t_servo_flip = settings[0]      # top servo position to flip the cube on one of its horizontal axis
             t_servo_open = settings[1]      # top servo position to free up the top cover from the cube, and keep the lifter out of the way
@@ -121,6 +126,10 @@ def upload_settings():
             b_spin_time = settings[13]     # time needed to the bottom servo to spin about 90deg
             b_rotate_time = settings[14]   # time needed to the bottom servo to rotate about 90deg
             b_rel_time = settings[15]      # time needed to the servo to rotate slightly back, to release tensions
+            
+            t_srv_pw_range = settings[16]  # top servo pulse width range (string variable)
+            b_srv_pw_range = settings[17]  # bottom servo pulse width range (string variable)
+            
 
             b_servo_CCW_rel=b_servo_CCW + b_extra_sides   # bottom servo position to rel tensions when fully CW
             b_servo_CW_rel=b_servo_CW - b_extra_sides     # bottom servo position to rel tensions when fully CCW
@@ -154,6 +163,7 @@ def stopping_servos(debug):
 
 
 
+
 def stop_release(debug):
     """ Function to relelease the stop from servos."""
     
@@ -177,6 +187,8 @@ def flip_test():
         flip_up()               # servo is positioned to flip the cube
     else:                       # case the servo is on flip position
         flip_to_open()          # servo is positioned to flip the cube
+    sleep_ms(200)               # small delay before de-energizing the servo
+    t_servo.duty(0)             # PWM signal interruption to top servo
 
 
 
@@ -197,7 +209,8 @@ def flip_up():
             elif t_top_cover == 'open':          # cover/lifter position variable set to open
                 t_servo.duty(t_servo_flip)       # servo is positioned to flip the cube
                 sleep_ms(t_flip_open_time)       # time for the servo to reach the flipping position                
-            t_top_cover='flip'                   # cover/lifter position variable set to flip 
+            t_top_cover='flip'                   # cover/lifter position variable set to flip
+            
 
 
 
@@ -246,7 +259,7 @@ def flip_to_close():
 
 
 
-def open_cover():
+def open_cover(test=False):
     """ Function to open the top cover from the close position, to release the contrain from the cube."""
     
     global t_top_cover, b_servo_operable, b_servo_stopped, b_servo_home
@@ -258,14 +271,18 @@ def open_cover():
             sleep_ms(t_open_close_time)        # time for the servo to reach the open position
             t_top_cover='open'                 # variable to track the top cover/lifter position
             b_servo_operable=True              # variable to block/allow bottom servo operation
+            if test==True:                     # case the function is called for parameter settings
+                sleep_ms(300)                  # delay before de-energizing the servo 
+                t_servo.duty(0)                # PWM signal interruption to top servo
+                
 
 
 
 
 
 
-def close_cover():
-    """ Function to close the top cover, to contrain the cube."""
+def close_cover(test=False):
+    """ Function to close the top cover, to constrain the cube."""
     
     global t_top_cover, b_servo_operable, b_servo_stopped, b_servo_home
     
@@ -277,6 +294,9 @@ def close_cover():
             t_servo.duty(t_servo_rel)          # servo is positioned to release the tention from top of the cube (in case of contact)
             t_top_cover='close'                # cover/lifter position variable set to close
             b_servo_operable=True              # variable to block/allow bottom servo operation
+            if test==True:                     # case the function is called for parameter settings
+                sleep_ms(300)                  # small delay before de-energizing the servo
+                t_servo.duty(0)                # PWM signal interruption to top servo
 
 
 
@@ -298,12 +318,12 @@ def spin_out(direction):
                 b_servo_CCW_pos=False              # boolean of bottom servo at full CCW position
                 
                 if direction=='CCW':               # case the set direction is CCW
-                    b_servo.duty(b_servo_CCW+1)    # bottom servo moves to the most CCW position
+                    b_servo.duty(b_servo_CCW_rel)  # bottom servo moves to the most CCW position (release CCW position)
                     sleep_ms(b_spin_time)          # time for the bottom servo to reach the most CCW position
                     b_servo_CCW_pos=True           # boolean of bottom servo at full CCW position
                 
                 elif direction=='CW':              # case the set direction is CW
-                    b_servo.duty(b_servo_CW-1)     # bottom servo moves to the most CCW position
+                    b_servo.duty(b_servo_CW_rel)   # bottom servo moves to the most CW position (release CW position)
                     sleep_ms(b_spin_time)          # time for the bottom servo to reach the most CCW position
                     b_servo_CW_pos=True            # boolean of bottom servo at full CW position
                 
@@ -760,9 +780,63 @@ def servo_solve_cube(moves, debug, stop_btn, btn_ref):
      
 
 
+def swipe_and_center():
+    """ Function that spins the cube holder to both end positions before stopping to the middle one.
+        This is meant to:
+        1) check the rotation range of the servo before assembling the robot.
+        2) set the servos to their mid position, so to properly connect the arms."""
+        
+    from machine import Pin, PWM
+    from utime import sleep_ms
+
+    t_servo= PWM(Pin(22), freq=50)  # top servo, connected to Pin 22
+    sleep_ms(50)
+
+    b_servo= PWM(Pin(23), freq=50)  # bottom servo, connected to Pin 23
+    sleep_ms(50)
+    
+    max_1000to2000us = 106          # Servo duty value for angle -100deg, beyond limit of a 1 to 2ms servo
+    max_500to2500us = 134           # Servo duty value for angle -100deg, beyond limit of a 0.5 to 2.5ms servo
+    min_1000to2000us = 48           # Servo duty value for angle 100deg, beyond limit of a 1 to 2ms servo
+    min_500to2500us = 20            # Servo duty value for angle 100deg, beyond limit of a 0.5 to 2.5ms servo
+    mid_pos = 76                    # Servo duty value for angle 0deg, for 1to2ms and 0.5to2.5ms servo
+    
+    b_servo.duty(mid_pos)           # servo is set to mid position
+    t_servo.duty(mid_pos)           # servo is set to mid position
+    print(f"\nservos set to their middle position")
+    sleep_ms(800)                   # time for the servos to reach the mid position
+    
+    # because of different resolution of servos and accepted value:
+    # a 1to2ms servo will stop rotating earlier, and each step will take larger rotation
+    # while a 500to2500us servo will rotate for longer time, and each step will take smaller rotation
+    
+    print(f"\nservos rotating in steps toward one rotation extreme (CCW, from servo point of view)")
+    for i in range(mid_pos, min_500to2500us, -1): # swipe from mid to min position
+        b_servo.duty(i)
+        t_servo.duty(i)
+        sleep_ms(80)
+    sleep_ms(1000)
+    
+    print(f"\nservos rotating in steps toward the other rotation extreme (CW, from servo point of view)")
+    for i in range(min_500to2500us, max_500to2500us, 1): # swipe from min to max position
+        b_servo.duty(i)
+        t_servo.duty(i)
+        sleep_ms(80)
+    sleep_ms(1000)
+    
+    print(f"\nservos rotating in steps back to their middle position")
+    for i in range(max_500to2500us, mid_pos, -1): # swipe from max to mid position
+        b_servo.duty(i)
+        t_servo.duty(i)
+        sleep_ms(80)
+    
+    print(f"\nservos are at their middle position")   
 
 
-if __name__ == "__main__":
+
+
+
+def fix_cube_sequence():
     """ example of robot movements for a given moves string:
         F2R1S3R1S3S3F1R1F2R1S3S3F1R1S3R1F3R1S3R1S3S3F3R1S3F1R1S3R1F3R1S3R1S3F3R1S3R1
         F1R3S1F1R3F1S1R3S3F1R1S3R1F3S1R3F1R1S3S3F3R1S3R1F3R1S3R1S3F1S1R3S1F3R3F1R1S3'  """
@@ -785,9 +859,9 @@ if __name__ == "__main__":
     if debug:
         print("ref_stop_btn_value:",btn_ref)
     
-    
-    
+ 
     if init_servo(debug):                                                # servos are initialized
+        
         print('servo init done\n')                                       # print feedback
         
         robot_status, robot_time = servo_solve_cube(moves, debug, stop_btn, btn_ref)   # robot solver is called                                                     # time after the robot movements
@@ -800,3 +874,10 @@ if __name__ == "__main__":
         
         elif robot_status == 'Robot_stopped':                            # case the robot solver returns Robot_stopped in the robot_status
             print(f"\nRobot has been stopped, after {robot_time} secs")  # print the status as feedback
+
+
+
+
+if __name__ == "__main__":
+    fix_cube_sequence()
+    
