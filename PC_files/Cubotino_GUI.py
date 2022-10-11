@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[23]:
 
 
 #!/usr/bin/env python
 # coding: utf-8
 
-
-
 """
 #############################################################################################################
-# Andrea Favero          11 June 2022
+# Andrea Favero          11 October 2022
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
@@ -19,14 +17,14 @@
 # Credits to Mr. Kociemba for the GUI, in addition to the TwoPhasesSolver!
 # 
 # This GUI aims to get the cube status, to communicate with the Kociemba TwophaseSolver (getting the cube solving
-# manoeuvres) and finally to interact with the Cubotino robot;
+#  manoeuvres) and finally to interact with the Cubotino robot;
 # During the cube solving process by the robot, the GUI updates the cube status sketch accordingly.
 # 
 # The cube status can be entered manually, or it can be acquired via a webcam by manually presenting the cube faces.
 # The GUI has a setting page, with the most relevant settings for the robot, and the webcam
 # 
 # Manoeuvres to CUBOTino robot are sent as a tipical cube solution string, after removing empty spaces,
-# with "<" and ">" characters used as conwtrols to ensure the full string is received by the robot UART.
+#  with "<" and ">" characters used as conwtrols to ensure the full string is received by the robot UART.
 # Other commands to the robot are sent in between square brackets, to only process complete strings
 #
 #############################################################################################################
@@ -66,7 +64,7 @@ if not solver_found:                                  # case the library was not
         twophase_solver_found = True                  # boolean to track no exception on import the installed solver
     except:                                           # exception is raised if no library in venv or other issues
         twophase_solver_found = False                 # boolean to track exception on importing the installed solver
-     
+
 if not solver_found and not twophase_solver_found:    # case no one solver has been imported
     if solver_already_imported:                       # case the solver was not already imported 
         print('\n(Kociemba) twophase solver not found')    # feedback is printed to the terminal
@@ -99,7 +97,12 @@ def get_settings(settings):
     
     global t_servo_flip, t_servo_open, t_servo_close, t_servo_release, b_rotate_time, b_spin_time, b_rel_time
     global t_flip_to_close_time, t_close_to_flip_time, t_flip_open_time, t_open_close_time
-    global b_servo_CCW, b_home, b_servo_CW, b_extra_sides, b_extra_home, robot_settings
+    global b_servo_CCW, b_home, b_servo_CW, b_extra_sides, b_extra_home
+    global t_srv_pw_range, b_srv_pw_range, last_t_srv_pw_range, last_b_srv_pw_range
+    global s_pwm_flip_min, s_pwm_flip_max, s_pwm_open_min, s_pwm_open_max
+    global s_pwm_close_min, s_pwm_close_max, s_pwm_ccw_min, s_pwm_ccw_max
+    global s_pwm_home_min, s_pwm_home_max, s_pwm_cw_min, s_pwm_cw_max
+    global robot_settings
     
     t_servo_flip = settings[0]          # top servo pos to flip the cube on one of its horizontal axis
     t_servo_open = settings[1]          # top servo pos to free up the top cover from the cube
@@ -118,11 +121,56 @@ def get_settings(settings):
     b_spin_time = settings[13]          # time needed to the bottom servo to spin about 90deg
     b_rotate_time = settings[14]        # time needed to the bottom servo to rotate about 90deg
     b_rel_time = settings[15]           # time needed to the servo to rotate slightly back, to release tensions
+       
+    t_srv_pw_range = settings[16] # top servo pulse width range (string variable)
+    b_srv_pw_range = settings[17] # bottom servo pulse width range (string variable)
+    
+    if t_srv_pw_range.lower() == 'small':
+        s_pwm_flip_min = 45       # min slider value for flip PWM setting (unit/1024*20 ms)
+        s_pwm_flip_max = 60       # max slider value for flip PWM setting (unit/1024*20 ms)
+        s_pwm_open_min = 60       # min slider value for open PWM setting (unit/1024*20 ms)
+        s_pwm_open_max = 75       # man slider value for open PWM setting (unit/1024*20 ms)
+        s_pwm_close_min = 65      # min slider value for close PWM setting (unit/1024*20 ms)
+        s_pwm_close_max = 90      # max slider value for close PWM setting (unit/1024*20 ms)
+        
+    elif t_srv_pw_range.lower() == 'large':
+        s_pwm_flip_min = 13       # min slider value for flip PWM setting (unit/1024*20 ms)
+        s_pwm_flip_max = 43       # max slider value for flip PWM setting (unit/1024*20 ms)
+        s_pwm_open_min = 43       # min slider value for open PWM setting (unit/1024*20 ms)
+        s_pwm_open_max = 73       # man slider value for open PWM setting (unit/1024*20 ms)
+        s_pwm_close_min = 53      # min slider value for close PWM setting (unit/1024*20 ms)
+        s_pwm_close_max = 103     # max slider value for close PWM setting (unit/1024*20 ms)
+    
+    if b_srv_pw_range.lower() == 'small':
+        s_pwm_ccw_min = 40        # min slider value for CCW PWM setting (unit/1024*20 ms)
+        s_pwm_ccw_max = 62        # max slider value for CCW PWM setting (unit/1024*20 ms)
+        s_pwm_home_min = 63       # min slider value for Home PWM setting (unit/1024*20 ms)
+        s_pwm_home_max = 87       # max slider value for Home PWM setting (unit/1024*20 ms)
+        s_pwm_cw_min = 88         # min slider value for CW PWM setting (unit/1024*20 ms)
+        s_pwm_cw_max = 110        # max slider value for CW PWM setting (unit/1024*20 ms)
+    
+    elif b_srv_pw_range.lower() == 'large':
+        s_pwm_ccw_min = 3         # min slider value for CCW PWM setting (unit/1024*20 ms)
+        s_pwm_ccw_max = 47        # max slider value for CCW PWM setting (unit/1024*20 ms)
+        s_pwm_home_min = 49       # min slider value for Home PWM setting (unit/1024*20 ms)
+        s_pwm_home_max = 97       # max slider value for Home PWM setting (unit/1024*20 ms)
+        s_pwm_cw_min = 99         # min slider value for CW PWM setting (unit/1024*20 ms)
+        s_pwm_cw_max = 143        # max slider value for CW PWM setting (unit/1024*20 ms)
+
+    last_t_srv_pw_range = t_srv_pw_range  # top servos pulse width setting is assigned as last one used
+    last_b_srv_pw_range = b_srv_pw_range  # bottom servos pulse width setting is assigned as last one used
     
     # tuple with all the servos and webcam settings saved on a txt file
     robot_settings=(t_servo_flip,t_servo_open,t_servo_close,t_servo_release, t_flip_to_close_time,
                     t_close_to_flip_time, t_flip_open_time,t_open_close_time,
-                    b_servo_CCW,b_home,b_servo_CW,b_extra_sides,b_extra_home,b_spin_time,b_rotate_time,b_rel_time)
+                    b_servo_CCW,b_home,b_servo_CW,b_extra_sides,b_extra_home,b_spin_time,b_rotate_time,b_rel_time,
+                    t_srv_pw_range, b_srv_pw_range, last_t_srv_pw_range, last_b_srv_pw_range,
+                    s_pwm_flip_min, s_pwm_flip_max, s_pwm_open_min, s_pwm_open_max,
+                    s_pwm_close_min, s_pwm_close_max, s_pwm_ccw_min, s_pwm_ccw_max,
+                    s_pwm_home_min, s_pwm_home_max, s_pwm_cw_min, s_pwm_cw_max)
+    
+#     print(robot_settings)
+
 
 
 
@@ -141,6 +189,38 @@ def get_cam_settings(cam_settings):
     facelets_in_width = cam_settings[4]  # min number of facelets side, in frame width, to filter out too smal squares
 
 
+
+
+
+
+def read_settings(file):
+    """ Function to read text files with the parameters, and to return a list of them.
+        All the settings are separated bty comma, and contained between a couple of brackets."""
+    
+    settings=[]                                        # empty list to store the list of settings    
+    try:                                               # tentative
+        with open(file, "r") as f:                     # open the file text file in read mode
+            data = f.readline()                        # data is on first line
+            data = data.replace(' ','')                # empty spaces are removed
+            if '(' in data and ')' in data:            # case the dat contains open and close parenthesis
+                data_start = data.find('(')            # position of open parenthesys in data
+                data_end = data.find(')')              # position of close parenthesys in data
+                data = data[data_start+1:data_end]     # data in between parenthesys is assigned, to the same string variable
+                data_list=data.split(',')              # data is split by comma, becoming a list of strings        
+                for setting in data_list:              # iteration over the list of strings
+                    setting.lower().strip()            # setting string is lowered and stripped
+                    if setting.isdigit():              # case the setting looks like a digit
+                        settings.append(int(setting))  # each str setting changed to int and appended to the list of settings
+                    else:                              # case the setting does not look like a digit
+                        if 'small' in setting:         # case the setting is equal to 'small'
+                            settings.append('small')   # string setting appends 'small' to the list of settings
+                        elif 'large' in setting:       # case the setting is equal to 'large'
+                            settings.append('large')   # string setting appends 'large' to the list of settings
+                if len(data)==0:                       # case no one setting has been added to the list
+                    print("File", file, "does not contain settings")  # print a feedback to the terminal
+    except:                                            # case the tentative did not succeeded
+        print("Something is wrong with file:", file, "or file missed") # print a feedback to the terminal
+    return settings                                    # returns the list of settings
 ########################################################################################################################
 
 
@@ -184,45 +264,32 @@ robot_moves=""                 # string variable holding all the robot moves (ro
 cube_status={}                 # dictionary variable holding the cube status, for GUI update to robot permutations
 left_moves={}                  # dictionary holding the remaining robot moves
 
-
 timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')    # timestamp used on logged data and other locations
 
-try: 
-    with open("Cubotino_settings.txt", "r") as f:  # open the servos settings text file in read mode
-        data = f.readline()                        # data is on first line
-        data = data.replace(' ','')                # empty spaces are removed
-        if '(' in data and ')' in data:            # case the dat contains open and close parenthesis
-            data_start = data.find('(')            # position of open parenthesys in data
-            data_end = data.find(')')              # position of close parenthesys in data
-            data = data[data_start+1:data_end]     # data in between parenthesys is assigned, to the same string variable
-            data_list=data.split(',')              # data is split by comma, becoming a list of strings 
 
-            settings=[]                            # empty list to store the list of numerical settings
-            for setting in data_list:              # iteration over the list of strings
-                settings.append(int(setting))      # each str setting changed to int and appended to the list of settings
-            get_settings(settings)                 # call to the function that makes global these servos settings        
-except:
-    print("Something is wrong with Cubotino_settings.txt file")
+# read settings from the text files
+fname1 = os.path.join('.','Cubotino_settings_backup.txt')             # backup file with servos settings
+fname2 = os.path.join('.','Cubotino_cam_settings_backup.txt')         # backup file with cam settings
+personal_settings = os.path.isfile(fname1) and os.path.isfile(fname2) # bool for both files existance
 
+if personal_settings:             # case the settings backup files exist (user have made personal settings)
+    # this approach gives priority to personal settings, to prevent issues after a git update
+    data = read_settings('Cubotino_settings_backup.txt')  # from servos backup txt file to list of settings
+    if len(data) > 0:             # case the file reading returned a list of settings
+        get_settings(data)        # call the function that makes global these servos settings 
+    data = read_settings('Cubotino_cam_settings_backup.txt') # from cam backup txt file to list of settings
+    if len(data) > 0:             # case the file reading returned a list of settings
+        get_cam_settings(data)    # call to the function that makes global these cam settings 
+    
+elif not personal_settings:       # case the settings backup files do not exist (user has not made personal settings yet)
+    data = read_settings('Cubotino_settings.txt') # from servos settings txt file to list of settings
+    if len(data) > 0:             # case the file reading returned a list of settings
+        get_settings(data)        # call to the function that makes global these servos settings 
+    
+    data = read_settings('Cubotino_cam_settings.txt') # from cam settings txt file to list 
+    if len(data) > 0:             # case the file reading returned a list of settings
+        get_cam_settings(data)    # call to the function that makes global these cam settings 
 
-
-try: 
-    with open("Cubotino_cam_settings.txt", "r") as f: # open the webcam settings text file in read mode
-        data = f.readline()                           # data is on first line
-        data = data.replace(' ','')                   # empty spaces are removed
-        if '(' in data and ')' in data:               # case the data contains open and close parenthesis
-            data_start = data.find('(')               # position of open parenthesys in data
-            data_end = data.find(')')                 # position of close parenthesys in data
-            data = data[data_start+1:data_end]        # data in between parenthesys is re-assigned, to the same variable
-            data_list=data.split(',')                 # data is split by comma, becoming a list of strings 
-            
-            cam_settings=[]                           # empty list to store the list of numerical settings
-            for setting in data_list:                 # iteration over the list of strings
-                cam_settings.append(int(setting))     # elements are converted to integer and appended
-            get_cam_settings(cam_settings)            # call to the function that makes global these cam settings  
-
-except:
-    print("Something is wrong with Cubotino_cam_settings.txt file")
 ########################################################################################################################
 
 
@@ -232,6 +299,21 @@ except:
 
 # ################################################ Functions ###########################################################
 
+def write_backup_settings(data):
+    timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')    # timestamp used on logged data and other locations
+    backup=timestamp+"_backup_"+data
+    try: 
+        with open("Cubotino_settings_backup.txt", "w") as f:  # open the servos settings text backup file in read mode
+            f.write(backup)                              # data is on first line
+        print("saved last settings to Cubotino_settings_backup.txt file")
+    except:
+        print("Something went wrong while saving Cubotino_settings_backup.txt file")
+
+
+
+
+
+
 def show_window(window):
     """Function to bring to the front the window in argument."""
     
@@ -239,8 +321,8 @@ def show_window(window):
     
     if window==settingWindow:                  # case the request is to show the settings windows
         settingWindow.tkraise()                # settings windows is raised on top
-        root.minsize(int(0.9*max(app_width,1250)), int(0.9*app_height))  # min GUI size, limiting resizing, for setting_window
-        root.maxsize(int(1.1*max(app_width,1250)), int(1.1*app_height))  # max GUI size, limiting resizing, for setting_window
+        root.minsize(int(1*max(app_width,1250)), int(1.05*app_height))  # min GUI size, limiting resizing, for setting_window
+        root.maxsize(int(1.2*max(app_width,1250)), int(1.3*app_height))  # max GUI size, limiting resizing, for setting_window
         root.resizable(True, True)                         # allowing the root windows to be resizeable
         mainWindow_ontop=False                 # boolean of main windows being on top is set false
         gui_sliders_update('update_sliders')   # calls the function to update the sliders on the (global) variables
@@ -893,19 +975,24 @@ def cube_facelets_permutation(cube_status, move_type, direction):
        As example, in case of flip, the resulting facelet 0 is the one currently in position 53 (ref[0])."""
     
     if move_type == 'flip':      # case the robot move is a cube flip (complete cube rotation around L-R horizontal axis) 
-        ref=(53,52,51,50,49,48,47,46,45,11,14,17,10,13,16,9,12,15,0,1,2,3,4,5,6,7,8,             18,19,20,21,22,23,24,25,26,42,39,36,43,40,37,44,41,38,35,34,33,32,31,30,29,28,27)
+        ref=(53,52,51,50,49,48,47,46,45,11,14,17,10,13,16,9,12,15,0,1,2,3,4,5,6,7,8,18,
+             19,20,21,22,23,24,25,26,42,39,36,43,40,37,44,41,38,35,34,33,32,31,30,29,28,27)
     
     elif move_type == 'spin':    # case the robot move is a spin (complete cube rotation around vertical axis)
         if direction == '1':     # case spin is CW
-            ref=(2,5,8,1,4,7,0,3,6,18,19,20,21,22,23,24,25,26,36,37,38,39,40,41,42,43,44,                33,30,27,34,31,28,35,32,29,45,46,47,48,49,50,51,52,53,9,10,11,12,13,14,15,16,17)
+            ref=(2,5,8,1,4,7,0,3,6,18,19,20,21,22,23,24,25,26,36,37,38,39,40,41,42,43,44,
+                 33,30,27,34,31,28,35,32,29,45,46,47,48,49,50,51,52,53,9,10,11,12,13,14,15,16,17)
         elif direction == '3':      # case spin is CCW
-            ref=(6,3,0,7,4,1,8,5,2,45,46,47,48,49,50,51,52,53,9,10,11,12,13,14,15,16,17,                29,32,35,28,31,34,27,30,33,18,19,20,21,22,23,24,25,26,36,37,38,39,40,41,42,43,44)
+            ref=(6,3,0,7,4,1,8,5,2,45,46,47,48,49,50,51,52,53,9,10,11,12,13,14,15,16,17,
+                 29,32,35,28,31,34,27,30,33,18,19,20,21,22,23,24,25,26,36,37,38,39,40,41,42,43,44)
     
     elif move_type == 'rotate':  # case the robot move is a rotation (lowest layer rotation versus mid and top ones) 
         if direction == '1':     # case 1st layer rotation is CW
-            ref=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,24,25,26,18,19,20,21,22,23,42,43,44,                33,30,27,34,31,28,35,32,29,36,37,38,39,40,41,51,52,53,45,46,47,48,49,50,15,16,17)
+            ref=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,24,25,26,18,19,20,21,22,23,42,43,44,
+                 33,30,27,34,31,28,35,32,29,36,37,38,39,40,41,51,52,53,45,46,47,48,49,50,15,16,17)
         elif direction == '3':   # case 1st layer rotation is CCW
-            ref=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,51,52,53,18,19,20,21,22,23,15,16,17,                29,32,35,28,31,34,27,30,33,36,37,38,39,40,41,24,25,26,45,46,47,48,49,50,42,43,44)
+            ref=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,51,52,53,18,19,20,21,22,23,15,16,17,
+                 29,32,35,28,31,34,27,30,33,36,37,38,39,40,41,24,25,26,45,46,47,48,49,50,42,43,44)
     
     new_status={}                # empty dict to generate the cube status, updated according to move_type and direction
     for i in range(54):                    # iteration over the 54 facelets
@@ -1078,8 +1165,16 @@ def robot_received_settings(received):
 
         settings=[]                                # empty list to store the list of numerical settings
         for setting in data_list:                  # iteration over the list of strings
-            settings.append(int(setting))      # string setting changed to integer and appended to the list of settings
-        
+            setting.lower().strip()                # setting string is lowered and stripped
+            if setting.isdigit():                  # case the setting looks like a digit
+                settings.append(int(setting))      # each str setting changed to int and appended to the list of settings
+            else:                                  # case the setting does not look like a digit
+                if 'small' in setting:             # case the setting is equal to 'small'
+                    settings.append('small')       # string setting appends 'small' to the list of settings
+                elif 'large' in setting:           # case the setting is equal to 'large'
+                    settings.append('large')       # string setting appends 'large' to the list of settings
+       
+               
         get_settings(settings)                                 # function that updates the individual global variables
         gui_sliders_update('update_sliders')                   # function that updates the gui sliders
         with open("Cubotino_settings.txt", 'w') as f:          # open the servos setting text file in write mode
@@ -1099,7 +1194,8 @@ def gui_sliders_update(intent):
     
     global t_servo_flip, t_servo_open, t_servo_close, t_servo_release, b_rotate_time, b_spin_time, b_rel_time
     global t_flip_to_close_time, t_close_to_flip_time, t_flip_open_time, t_open_close_time
-    global b_servo_CCW, b_home, b_servo_CW, b_extra_sides, b_extra_home, robot_settings
+    global b_servo_CCW, b_home, b_servo_CW, b_extra_sides, b_extra_home
+    global t_srv_pw_range, b_srv_pw_range, robot_settings
     
     if intent == 'read_sliders':             # case the intention is to get sliders values to update the global variables
         t_servo_flip = s_top_srv_flip.get()
@@ -1120,10 +1216,11 @@ def gui_sliders_update(intent):
         b_rotate_time = s_btm_srv_rotate_time.get()
         b_rel_time = s_btm_srv_rel_time.get()
         
-        # gloval tuple variable with the servos related settings
+        # global tuple variable with the servos related settings
         robot_settings=(t_servo_flip,t_servo_open,t_servo_close,t_servo_release, t_flip_to_close_time,
-                        t_close_to_flip_time, t_flip_open_time,t_open_close_time,
-                        b_servo_CCW,b_home,b_servo_CW,b_extra_sides,b_extra_home,b_spin_time,b_rotate_time,b_rel_time)
+                    t_close_to_flip_time, t_flip_open_time,t_open_close_time,
+                    b_servo_CCW,b_home,b_servo_CW,b_extra_sides,b_extra_home,b_spin_time,b_rotate_time,b_rel_time,
+                    t_srv_pw_range, b_srv_pw_range)
 
     elif intent == 'update_sliders':          # case the intention is to update sliders from the global variables values
         s_top_srv_flip.set(t_servo_flip)
@@ -1144,7 +1241,7 @@ def gui_sliders_update(intent):
         s_btm_srv_rotate_time.set(b_rotate_time)
         s_btm_srv_rel_time.set(b_rel_time)
 
-
+    
 
 
 
@@ -1155,15 +1252,15 @@ def log_data():
     global timestamp, defStr, cube_solving_string, cube_solving_string_robot, end_method
     global tot_moves, robot_time
            
+
     import os                                        # os is imported to ensure the folder check/make
     folder = os.path.join('.','data_log_folder')     # folder to store the collage pictures
-    
     if not os.path.exists(folder):                   # if case the folder does not exist
         os.makedirs(folder)                          # folder is made if it doesn't exist
 
     fname = os.path.join(folder,'Cubotino_log.txt')  # folder+filename
     
-    if not os.path.exists(fname):              # case the file does not exist (file with headers is generated)
+    if not os.path.exists(fname):     # case the file does not exist (file with headers is generated)
         print(f'\ngenerated Cubotino_log.txt file with headers')
         
         # columns headers
@@ -1492,7 +1589,7 @@ def servo_release(val):
     t_servo_release = int(val)       # top servo release position after closing toward the cube
 
 def flip_to_close_time(val):
-    t_flip_to_close_time = int(val)  # time to lower the cover/flipper from flip to close position
+    t_flip_to_close_time = int(val)  # time to lower the cover/flipper from flip to close position     
 
 def close_to_flip_time(val):
     t_close_to_flip_time = int(val)  # time to raise the cover/flipper from close to flip position
@@ -1549,38 +1646,6 @@ def cw():
 
 
 
-# ############################ functions to get/send servos settings by/to the robot #################################
-
-def cubotino_settings_AF():
-    """Function to upload the servos settings used on my own CUBOTino, just as refernce.
-    These settings cannot be overwritten via the GUI, therefore a reliable reference over time."""
-    
-    try:  
-        with open("Cubotino_settings_AF.txt", "r") as f:  # servo settings text file is opened in read mode
-            data = f.readline()                           # data is on first line
-            data = data.replace(' ','')                   # empty spaces are removed
-            if '(' in data and ')' in data:               # case the dat contains open and close parenthesis
-                data_start = data.find('(')               # position of open parenthesys in data
-                data_end = data.find(')')                 # position of close parenthesys in data
-                print(f'\noriginal AF servos settings, as reference: {data[data_start:data_end+1]}')
-                data = data[data_start+1:data_end]     # data in between parenthesys is assigned, to same string variable
-                data_list=data.split(',')              # data is split by comma, becoming a list of strings 
-
-                settings=[]                            # empty list to store the list of numerical settings
-                for setting in data_list:              # iteration over the list of strings
-                    settings.append(int(setting))      # string setting is changed to integer and appended to the list
-                get_settings(settings)
-
-        gui_sliders_update('update_sliders')           # sliders positions are updated
-
-    except:
-        print("Something is wrong with Cubotino_settings_AF.txt file")
-
-
-
-
-
-
 def get_current_servo_settings():
     """Request robot to send the current servos settings."""
         
@@ -1599,14 +1664,201 @@ def send_new_servo_settings():
     
     global robot_settings
     
-    gui_sliders_update('read_sliders')                       # sliders positions are read                    
-    data=str(robot_settings)                                 # tuple with servos settings is changed in string
-    data=data.replace(" ","")                                # eventual empty spaces are removed from the data string
-    print(f'\nservos settings sent to the robot: {data}')    # feedback is print to the terminal, as tuning reference
+    gui_sliders_update('read_sliders')                     # sliders positions are read                    
+    data=str(robot_settings)                               # tuple with servos settings is changed in string
+    data=data.replace(" ","")                              # eventual empty spaces are removed from the data string
+    print(f'\nservos settings sent to the robot: {data}')  # feedback is print to the terminal, as tuning reference
     try:
-        ser.write(("[new_settings"+data+"]\n").encode())     # send the new servos settings to the robot
+        ser.write(("[new_settings"+data+"]\n").encode())   # send the new servos settings to the robot
+        write_backup_settings(data)                        # call to the function to save a backup file od the settings
     except:
         pass
+
+
+
+
+
+
+def angle2slider_value(angle, min_pw, max_pw, min_angle=-90):
+    """Returns the servo duty signal for a target angle of the servo;
+    This considers a servo having 180deg rotation, determined by min_pw and max_pw."""
+    
+    slider_val = 0 # arbitray slider value outside the expected range
+    
+    # pulse width is calculated in microseconds
+    pulse_with = (max_pw-min_pw)/180*(angle-min_angle+(180*min_pw/(max_pw-min_pw)))
+    
+    # converts the pulse width (microseconds) to servo duty units
+    servo_freq = 50
+    period = 1000//servo_freq
+    slider_val = int(round(pulse_with*1.024/period,0))   
+    
+    if slider_val == 0:
+        print("angle2slider_value conversion error")
+        
+    return slider_val
+
+
+
+
+
+
+def slider2angle_value(slider_val, srv_pw_range):
+    """Returns the servo angle associated to a slider cursor value and the servo pulse width range;
+    This considers a servo having 180deg rotation."""
+       
+    servo_freq = 50
+    period = 1000//servo_freq
+    pulse_width = slider_val/1024*period
+    
+    angle = 1000                    # arbitray angle value outside the expected range
+    
+    if srv_pw_range == 'small':     # case the servo has a pulse width range from 1 to 2 ms
+        angle = 180*pulse_width-270
+    
+    elif srv_pw_range == 'large':   # case the servo has a pulse width range from 1 to 2 ms
+        angle = 90*pulse_width-135
+    
+    if angle == 1000:
+        print("slider2angle_value conversion error")
+    
+    return angle
+
+
+
+
+def pw_update():
+    """update the range and cursor value for the sliders, according to the servos pulse width range.
+    This function is only called when the 'change confirmed' button is pressed."""
+    
+    global t_srv_pw_range, b_srv_pw_range, last_t_srv_pw_range, last_b_srv_pw_range
+    
+    # case the 'update' button has been pressed without changing the servos pulse width
+    if gui_var_t_srv_pw.get() == last_t_srv_pw_range and gui_var_b_srv_pw.get() == last_b_srv_pw_range:
+        return  # the function returns without any action
+    
+    global t_servo_flip, t_servo_open, t_servo_close
+    global b_servo_CCW, b_home, b_servo_CW
+    global s_pwm_flip_min, s_pwm_flip_max, s_pwm_open_min, s_pwm_open_max
+    global s_pwm_close_min, s_pwm_close_max, s_pwm_ccw_min, s_pwm_ccw_max
+    global s_pwm_home_min, s_pwm_home_max, s_pwm_cw_min, s_pwm_cw_max 
+    
+    if gui_var_t_srv_pw.get() != last_t_srv_pw_range:
+        if last_t_srv_pw_range.lower() == 'small':   # case the previous setting was 'small' pulse width (1 to 2 ms)
+            min_pw = 1000             # min pulse width is 1000us
+            max_pw = 2000             # max pulse width is 2000us
+            new_min_pw = 500          # new min pulse width is 500us
+            new_max_pw = 2500         # mew max pulse width is 2500us
+            srv_pw_range = 'small'    # last pulse width used in string is 'small'
+            t_srv_pw_range = 'large'  # new pulse width for top servo in string'is 'large'
+            srv_pw_label = '0.5 - 2.5 ms' # pulse width label for the chosen large setting
+
+        elif last_t_srv_pw_range.lower() == 'large': # case the previous setting was 'large' pulse width (0.5 to 2.5 ms)
+            min_pw = 500              # min pulse width is 500us
+            max_pw = 2500             # max pulse width is 2500us
+            new_min_pw = 1000         # new min pulse width is 1000us
+            new_max_pw = 2000         # mew max pulse width is 2000us
+            srv_pw_range = 'large'    # last pulse width used in string is 'large'
+            t_srv_pw_range = 'small'  # new pulse width for top servo is string is 'small'
+            srv_pw_label = '1 - 2 ms' # pulse width label for the chosen small setting
+        
+        print('changed the pulse width range of top servo to', srv_pw_label)
+       
+       
+        # current and new sliders cursors values
+        t_servo_flip = s_top_srv_flip.get()                               # current slider positions is read
+        angle = slider2angle_value(t_servo_flip, srv_pw_range)            # current angle positions
+        t_servo_flip = angle2slider_value(angle, new_min_pw, new_max_pw)  # new slider position for the same angle
+
+        t_servo_open = s_top_srv_open.get()                               # current slider positions is read
+        angle = slider2angle_value(t_servo_open, srv_pw_range)            # current angle positions
+        t_servo_open = angle2slider_value(angle, new_min_pw, new_max_pw)  # new slider position for the same angle
+
+        t_servo_close = s_top_srv_close.get()                             # slider positions is read
+        angle = slider2angle_value(t_servo_close, srv_pw_range)           # current angle positions
+        t_servo_close = angle2slider_value(angle, new_min_pw, new_max_pw) # new slider position for the same angle
+ 
+        # top_cover flip postion, slider extremes values
+        s_pwm_flip_min = angle2slider_value(-112, new_min_pw, new_max_pw) # min slider value
+        s_pwm_flip_max = angle2slider_value(-59, new_min_pw, new_max_pw)  # max slider value
+        s_top_srv_flip.configure(from_ = s_pwm_flip_min)                  # min slider setting
+        s_top_srv_flip.configure(to = s_pwm_flip_max)                     # max slider setting
+
+        # top_cover open position, slider extremes values
+        s_pwm_open_min = angle2slider_value(-59, new_min_pw, new_max_pw)  # min slider value
+        s_pwm_open_max = angle2slider_value(-6, new_min_pw, new_max_pw)   # max slider value
+        s_top_srv_open.configure(from_ = s_pwm_open_min)                  # min slider setting
+        s_top_srv_open.configure(to = s_pwm_open_max)                     # max slider setting
+
+        # top_cover close position, slider extremes values
+        s_pwm_close_min = angle2slider_value(-41, new_min_pw, new_max_pw) # min slider value
+        s_pwm_close_max = angle2slider_value(46, new_min_pw, new_max_pw)  # max slider value
+        s_top_srv_close.configure(from_ = s_pwm_close_min)                # min slider setting
+        s_top_srv_close.configure(to = s_pwm_close_max)                   # max slider setting
+
+        last_t_srv_pw_range = t_srv_pw_range  # the new top servos pulse width is now the last one used
+
+    
+    if gui_var_b_srv_pw.get() != last_b_srv_pw_range: 
+        if last_b_srv_pw_range.lower() == 'small':   # case the previous setting was 'small' pulse width (1 to 2 ms)
+            min_pw = 1000             # min pulse width is 1000us
+            max_pw = 2000             # max pulse width is 2000us
+            new_min_pw = 500          # new min pulse width is 500us
+            new_max_pw = 2500         # mew max pulse width is 2500us
+            srv_pw_range = 'small'    # last pulse width used in string is 'small'
+            b_srv_pw_range= 'large'   # new pulse width for bottom servo in string is 'large'
+            srv_pw_label = '0.5 - 2.5 ms' # pulse width label for the chosen large setting
+
+        elif last_b_srv_pw_range.lower() == 'large': # case the previous setting was 'large' pulse width (0.5 to 2.5 ms)
+            min_pw = 500              # min pulse width is 500us
+            max_pw = 2500             # max pulse width is 2500us
+            new_min_pw = 1000         # new min pulse width is 1000us
+            new_max_pw = 2000         # mew max pulse width is 2000us
+            srv_pw_range = 'large'    # last pulse width used in string is 'large'
+            b_srv_pw_range= 'small'   # new pulse width for bottom servo is string is 'small'
+            srv_pw_label = '1 - 2 ms' # pulse width label for the chosen small setting
+        
+        print('changed the pulse width range of top servo to', srv_pw_label)
+        
+        # current and new sliders cursors values 
+        b_servo_CCW = s_btm_srv_CCW.get()                                 # current slider positions is read
+        angle = slider2angle_value(b_servo_CCW, srv_pw_range)             # current angle positions
+        b_servo_CCW = angle2slider_value(angle, new_min_pw, new_max_pw)   # new slider position for the same angle
+
+        b_home = s_btm_srv_home.get()                                     # current slider positions is read
+        angle = slider2angle_value(b_home, srv_pw_range)                  # current angle positions
+        b_home = angle2slider_value(angle, new_min_pw, new_max_pw)        # new slider position for the same angle
+
+        b_servo_CW = s_btm_srv_CW.get()                                   # current slider positions is read
+        angle = slider2angle_value(b_servo_CW, srv_pw_range)              # current angle positions
+        b_servo_CW = angle2slider_value(angle, new_min_pw, new_max_pw)    # new slider position for the same angle
+
+        # bottom servo CCW position, slider extremes values
+        s_pwm_ccw_min = angle2slider_value(-129, new_min_pw, new_max_pw)  # min slider value
+        s_pwm_ccw_max = angle2slider_value(-52, new_min_pw, new_max_pw)   # max slider value
+        s_btm_srv_CCW.configure(from_ = s_pwm_ccw_min)                    # min slider setting
+        s_btm_srv_CCW.configure(to = s_pwm_ccw_max)                       # max slider setting
+
+        # bottom servo Home position, slider extremes values
+        s_pwm_home_min = angle2slider_value(-49, new_min_pw, new_max_pw)  # min slider value
+        s_pwm_home_max = angle2slider_value(36, new_min_pw, new_max_pw)   # max slider value
+        s_btm_srv_home.configure(from_ = s_pwm_home_min)                  # min slider setting
+        s_btm_srv_home.configure(to = s_pwm_home_max)                     # max slider setting
+
+        # bottom servo CW position, slider extremes values
+        s_pwm_cw_min = angle2slider_value(39, new_min_pw, new_max_pw)     # min slider value
+        s_pwm_cw_max = angle2slider_value(117, new_min_pw, new_max_pw)    # max slider value
+        s_btm_srv_CW.configure(from_ = s_pwm_cw_min)                      # min slider setting
+        s_btm_srv_CW.configure(to = s_pwm_cw_max)                         # max slider setting
+
+        last_b_srv_pw_range = b_srv_pw_range  # the new bottom servos pulse width is now the last one used        
+
+    print()
+    gui_sliders_update('update_sliders')  # calls the function to update the sliders on the (global) variables
+    
+    
+    
+    
 
 
 
@@ -1630,13 +1882,22 @@ def save_webcam():
     data=timestamp + str(cam_settings)  # string with timestamp and string of webcam settings
     
     try: 
-        with open("Cubotino_cam_settings.txt", 'w') as f:       # open the wbcam settings text file in write mode
-            f.write(data)                                       # write the string and save/close the file
-        print(f'\nsaving the webcam settings: {cam_settings}')  # feedback is printed to the terminal
+        with open("Cubotino_cam_settings.txt", 'w') as f:        # open the wbcam settings text file in write mode
+            f.write(data)                                        # write the string and save/close the file
+        print(f'\nsaving the webcam settings: {cam_settings}')   # feedback is printed to the terminal
 
     except:
         print("Something is wrong with Cubotino_cam_settings.txt file")
 
+    backup = timestamp + "_cam_backup_" + str(cam_settings)      # string with timestamp and string of webcam settings
+    try: 
+        with open("Cubotino_cam_settings_backup.txt", "w") as f: # open the servos settings text backup file in read mode
+            f.write(backup)                                      # data is on first line
+        print("saved last settings to Cubotino_cam_settings_backup.txt file")
+    except:
+        print("Something went wrong while saving Cubotino_cam_settings_backup.txt file")
+     
+        
 
 def webcam_width(val):
     cam_width = int(val)          # width of the webacam setting in pixels
@@ -1667,7 +1928,7 @@ except:
 
 
 app_width = 12*width+40+320               # GUI width is defined via the facelet width
-app_height = max(9*width+40,750)          # GUI height is defined via the facelet width, with a minimum size 670 pixels
+app_height = max(9*width+40,740)          # GUI height is defined via the facelet width, with a minimum size 670 pixels
 root.minsize(int(0.9*app_width), int(0.9*app_height))       # min GUI size, limiting the resizing on screen
 root.maxsize(int(1.2*app_width), int(1.2*app_height))       # max GUI size, limiting the resizing on screen
 
@@ -1705,7 +1966,7 @@ gui_canvas = tk.Canvas(gui_f1, width=12*width+20, height=9*width+40, highlightth
 gui_canvas.pack(side="top", fill="both", expand="true")   # gui_canvas is packed in gui_f1
    
 root.bind("<Button-1>", click)                # pressing the left mouse button calls the click function
-root.bind("<MouseWheel>", scroll)               # scrol up of the mouse wheel calls the scroll function 
+root.bind("<MouseWheel>", scroll)             # scrol up of the mouse wheel calls the scroll function 
 ########################################################################################################################
 
 
@@ -1800,10 +2061,10 @@ b_settings.grid(column=0, row=13, columnspan=2,  padx=10, pady=5)
 # ############################### Settings windows widgets #############################################################
 
 #### general settings related widgets ####   
-b_back = tk.Button(settingWindow, text="Main page", height=1, width=15, state="active",
-                   command= lambda: show_window(mainWindow))
-b_back.configure(font=("Arial", "11"))
-b_back.grid(row=9, column=4, sticky="w", padx=20, pady=20)
+b_back = tk.Button(settingWindow, text="Main page", #fg='red', activeforeground= 'red',
+                   height=1, width=12, state="active", command= lambda: show_window(mainWindow))
+b_back.configure(font=("Arial", "12"))
+b_back.grid(row=9, column=4, sticky="e", padx=20, pady=20)
 
 
 
@@ -1820,80 +2081,120 @@ b_send_settings.configure(font=("Arial", "11"))
 b_send_settings.grid(row=0, column=1, sticky="w", padx=20, pady=10)
 
 
-b_get_AF_settings = tk.Button(settingWindow, text="get AF settings", height=1, width=15,
-                           state="active", command= cubotino_settings_AF)
-b_get_AF_settings.configure(font=("Arial", "11"))
-b_get_AF_settings.grid(row=0, column=4, sticky="w", padx=20, pady=10)
+
+
+
+
+#### servos min and max pulse width widgets ####
+
+# overall label frame for the servos pulse width section
+srv_pw_label = tk.LabelFrame(settingWindow, text="Servos - pulse width range",
+                             labelanchor="nw", font=("Arial", "12"))
+srv_pw_label.grid(row=1, column=0, rowspan=2, columnspan=5, sticky="w", padx=20, pady=15)
+
+servos_modes=[("1-2 ms","small"),("0.5-2.5ms","large")]
+
+# label frame and radiobutton for the top servo pulse width
+t_srv_pw_label = tk.LabelFrame(srv_pw_label, text="Top servo", labelanchor="nw", font=("Arial", "12"))
+t_srv_pw_label.grid(row=1, column=0, rowspan=2, columnspan=2, sticky="w", padx=20, pady=15)
+gui_var_t_srv_pw = tk.StringVar()
+pos=0
+for servos_mode, servos_pw in servos_modes:
+    rb_srv=tk.Radiobutton(t_srv_pw_label, text=servos_mode, variable=gui_var_t_srv_pw, value=servos_pw)
+    rb_srv.configure(font=("Arial", "10"))
+    rb_srv.grid(row=2, column=pos, sticky="w", padx=12, pady=5)
+    pos+=1
+gui_var_t_srv_pw.set(t_srv_pw_range)
+
+# label frame and radiobutton for the bottom servo pulse width
+b_srv_pw_label = tk.LabelFrame(srv_pw_label, text="Bottom servo", labelanchor="nw", font=("Arial", "12"))
+b_srv_pw_label.grid(row=1, column=2, rowspan=2, columnspan=2, sticky="w", padx=20, pady=15)
+servos_modes=[("1-2 ms","small"),("0.5-2.5ms","large")]
+gui_var_b_srv_pw = tk.StringVar()
+pos=0
+for servos_mode, servos_pw in servos_modes:
+    rb_srv=tk.Radiobutton(b_srv_pw_label, text=servos_mode, variable=gui_var_b_srv_pw, value=servos_pw)
+    rb_srv.configure(font=("Arial", "10"))
+    rb_srv.grid(row=2, column=pos, sticky="w", padx=12, pady=5)
+    pos+=1
+gui_var_b_srv_pw.set(b_srv_pw_range)
+
+
+# button to process the servos pulse width changes
+pw_update_btn = tk.Button(srv_pw_label, text="confirm\nchanges", height=2, width=18, state="active", command= pw_update)
+pw_update_btn.configure(font=("Arial", "12"))
+pw_update_btn.grid(row=2, column=5, sticky="w", padx=15, pady=10)
+
 
 
 
 #### top servo related widgets ####
 top_srv_label = tk.LabelFrame(settingWindow, text="Top cover - servo settings",
                                    labelanchor="nw", font=("Arial", "12"))
-top_srv_label.grid(row=1, column=0, columnspan=5, sticky="w", padx=20, pady=15)
+top_srv_label.grid(row=3, column=0, rowspan=3, columnspan=4, sticky="w", padx=20, pady=0)
 
 s_top_srv_flip = tk.Scale(top_srv_label, label="PWM flip", font=('arial','11'), orient='horizontal',
-                               length=190, from_=45, to_=60, command=servo_flip)
-s_top_srv_flip.grid(row=2, column=0, sticky="w", padx=12, pady=5)
+                               length=170, from_=s_pwm_flip_min, to_=s_pwm_flip_max, command=servo_flip)
+s_top_srv_flip.grid(row=4, column=0, sticky="w", padx=12, pady=5)
 s_top_srv_flip.set(t_servo_flip)
 
 
 s_top_srv_open = tk.Scale(top_srv_label, label="PWM open", font=('arial','11'), orient='horizontal',
-                               length=190, from_=60, to_=75, command=servo_open)
-s_top_srv_open.grid(row=2, column=1, sticky="w", padx=12, pady=5)
+                               length=170, from_=s_pwm_open_min, to_=s_pwm_open_max, command=servo_open)
+s_top_srv_open.grid(row=4, column=1, sticky="w", padx=12, pady=5)
 s_top_srv_open.set(t_servo_open)
 
 
 s_top_srv_close = tk.Scale(top_srv_label, label="PWM close", font=('arial','11'), orient='horizontal',
-                              length=190, from_=65, to_=90, command=servo_close)
-s_top_srv_close.grid(row=2, column=2, sticky="w", padx=12, pady=5)
+                              length=170, from_=s_pwm_close_min, to_=s_pwm_close_max, command=servo_close)
+s_top_srv_close.grid(row=4, column=2, sticky="w", padx=12, pady=5)
 s_top_srv_close.set(t_servo_close)
 
 
 s_top_srv_release = tk.Scale(top_srv_label, label="PWM release from close", font=('arial','11'), orient='horizontal',
-                              length=190, from_=0, to_=5, command=servo_release)
-s_top_srv_release.grid(row=2, column=3, sticky="w", padx=12, pady=5)
+                              length=170, from_=0, to_=10, command=servo_release)
+s_top_srv_release.grid(row=4, column=3, sticky="w", padx=12, pady=5)
 s_top_srv_release.set(t_servo_close)
 
 
-flip_btn = tk.Button(top_srv_label, text="FLIP  (toggle)", height=1, width=20, state="active", command= flip_cube)
+flip_btn = tk.Button(top_srv_label, text="FLIP  (toggle)", height=1, width=18, state="active", command= flip_cube)
 flip_btn.configure(font=("Arial", "12"))
-flip_btn.grid(row=3, column=0, sticky="w", padx=15, pady=10)
+flip_btn.grid(row=5, column=0, sticky="w", padx=15, pady=10)
 
-open_btn = tk.Button(top_srv_label, text="OPEN", height=1, width=20, state="active", command= open_top_cover)
+open_btn = tk.Button(top_srv_label, text="OPEN", height=1, width=18, state="active", command= open_top_cover)
 open_btn.configure(font=("Arial", "12"))
-open_btn.grid(row=3, column=1, sticky="w", padx=15, pady=10)
+open_btn.grid(row=5, column=1, sticky="w", padx=15, pady=10)
 
-close_btn = tk.Button(top_srv_label, text="CLOSE", height=1, width=20, state="active", command= close_top_cover)
+close_btn = tk.Button(top_srv_label, text="CLOSE", height=1, width=18, state="active", command= close_top_cover)
 close_btn.configure(font=("Arial", "12"))
-close_btn.grid(row=3, column=2, sticky="w", padx=15, pady=10)
+close_btn.grid(row=5, column=2, sticky="w", padx=15, pady=10)
 
 
 s_top_srv_flip_to_close_time = tk.Scale(top_srv_label, label="TIME: flip > close (ms)", font=('arial','11'),
-                                        orient='horizontal', length=190, from_=200, to_=1000,
+                                        orient='horizontal', length=170, from_=200, to_=1000,
                                         resolution=50, command=flip_to_close_time)
-s_top_srv_flip_to_close_time.grid(row=4, column=0, sticky="w", padx=12, pady=5)
+s_top_srv_flip_to_close_time.grid(row=6, column=0, sticky="w", padx=12, pady=5)
 s_top_srv_flip_to_close_time.set(t_flip_to_close_time)
 
 
 s_top_srv_close_to_flip_time = tk.Scale(top_srv_label, label="TIME: close > flip (ms)", font=('arial','11'),
-                                        orient='horizontal', length=190, from_=200, to_=1000,
+                                        orient='horizontal', length=170, from_=200, to_=1000,
                                         resolution=50, command=close_to_flip_time)
-s_top_srv_close_to_flip_time.grid(row=4, column=1, sticky="w", padx=12, pady=5)
+s_top_srv_close_to_flip_time.grid(row=6, column=1, sticky="w", padx=12, pady=5)
 s_top_srv_close_to_flip_time.set(t_close_to_flip_time)
 
 
 s_top_srv_flip_open_time = tk.Scale(top_srv_label, label="TIME: flip <> open (ms)", font=('arial','11'),
-                                    orient='horizontal', length=190, from_=200, to_=1000,
+                                    orient='horizontal', length=170, from_=200, to_=1000,
                                     resolution=50, command=flip_open_time)
-s_top_srv_flip_open_time.grid(row=4, column=2, sticky="w", padx=10, pady=5)
+s_top_srv_flip_open_time.grid(row=6, column=2, sticky="w", padx=10, pady=5)
 s_top_srv_flip_open_time.set(t_flip_open_time)
 
 
-s_top_srv_open_close_time = tk.Scale(top_srv_label, label="TIME: open <> close (ms)", font=('arial','11'),
-                                     orient='horizontal', length=190, from_=100, to_=700,
+s_top_srv_open_close_time = tk.Scale(top_srv_label, label="TIME: open <> close(ms)", font=('arial','11'),
+                                     orient='horizontal', length=170, from_=100, to_=700,
                                      resolution=50, command=open_close_time)
-s_top_srv_open_close_time.grid(row=4, column=3, sticky="w", padx=12, pady=5)
+s_top_srv_open_close_time.grid(row=6, column=3, sticky="w", padx=12, pady=5)
 s_top_srv_open_close_time.set(t_open_close_time)
 
 
@@ -1903,76 +2204,78 @@ s_top_srv_open_close_time.set(t_open_close_time)
 #### bottom servo related widgets ####
 b_srv_label = tk.LabelFrame(settingWindow, text="Cube holder - servo settings",
                                    labelanchor="nw", font=("Arial", "12"))
-b_srv_label.grid(row=5, column=0, columnspan=5, sticky="w", padx=20, pady=10)
+b_srv_label.grid(row=7, column=0, columnspan=5, sticky="w", padx=20, pady=10)
 
 
 s_btm_srv_CCW = tk.Scale(b_srv_label, label="PWM CCW", font=('arial','11'), orient='horizontal',
-                              length=190, from_=40, to_=62, command=servo_CCW)
-s_btm_srv_CCW.grid(row=6, column=0, sticky="w", padx=13, pady=5)
+                              length=170, from_=s_pwm_ccw_min, to_=s_pwm_ccw_max, command=servo_CCW)
+s_btm_srv_CCW.grid(row=8, column=0, sticky="w", padx=13, pady=5)
 s_btm_srv_CCW.set(b_servo_CCW)
 
 
 s_btm_srv_home = tk.Scale(b_srv_label, label="PWM home", font=('arial','11'), orient='horizontal',
-                               length=190, from_=63, to_=87, command=servo_home)
-s_btm_srv_home.grid(row=6, column=1, sticky="w", padx=12, pady=5)
+                               length=170, from_=s_pwm_home_min, to_=s_pwm_home_max, command=servo_home)
+s_btm_srv_home.grid(row=8, column=1, sticky="w", padx=12, pady=5)
 s_btm_srv_home.set(b_home)
 
 
 s_btm_srv_CW = tk.Scale(b_srv_label, label="PWM CW", font=('arial','11'), orient='horizontal',
-                               length=190, from_=88, to_=110, command=servo_CW)
-s_btm_srv_CW.grid(row=6, column=2, sticky="w", padx=12, pady=5)
+                               length=170, from_=s_pwm_cw_min, to_=s_pwm_cw_max, command=servo_CW)
+s_btm_srv_CW.grid(row=8, column=2, sticky="w", padx=12, pady=5)
 s_btm_srv_CW.set(b_servo_CW)
 
 
 s_btm_srv_extra_sides = tk.Scale(b_srv_label, label="PWM release CW/CCW", font=('arial','11'), orient='horizontal',
-                               length=190, from_=0, to_=6, command=servo_extra_sides)
-s_btm_srv_extra_sides.grid(row=6, column=3, sticky="w", padx=12, pady=5)
+                               length=170, from_=0, to_=11, command=servo_extra_sides)
+s_btm_srv_extra_sides.grid(row=8, column=3, sticky="w", padx=12, pady=5)
 s_btm_srv_extra_sides.set(b_extra_sides)
 
 
 s_btm_srv_extra_home = tk.Scale(b_srv_label, label="PWM release at home", font=('arial','11'), orient='horizontal',
-                               length=190, from_=0, to_=6, command=b_extra_home)
-s_btm_srv_extra_home.grid(row=6, column=4, sticky="w", padx=12, pady=5)
+                               length=170, from_=0, to_=11, command=b_extra_home)
+s_btm_srv_extra_home.grid(row=8, column=4, sticky="w", padx=12, pady=5)
 s_btm_srv_extra_home.set(b_extra_home)
 
 
-CCW_btn = tk.Button(b_srv_label, text="CCW", height=1, width=20, state="active", command= ccw)
+CCW_btn = tk.Button(b_srv_label, text="CCW", height=1, width=18, state="active", command= ccw)
 CCW_btn.configure(font=("Arial", "12"))
-CCW_btn.grid(row=7, column=0, sticky="w", padx=15, pady=10)
+CCW_btn.grid(row=9, column=0, sticky="w", padx=15, pady=10)
 
 
-close_btn = tk.Button(b_srv_label, text="HOME", height=1, width=20, state="active", command= home)
+close_btn = tk.Button(b_srv_label, text="HOME", height=1, width=18, state="active", command= home)
 close_btn.configure(font=("Arial", "12"))
-close_btn.grid(row=7, column=1, sticky="w", padx=15, pady=10)
+close_btn.grid(row=9, column=1, sticky="w", padx=15, pady=10)
 
 
-CW_btn = tk.Button(b_srv_label, text="CW", height=1, width=20, state="active", command= cw)
+CW_btn = tk.Button(b_srv_label, text="CW", height=1, width=18, state="active", command= cw)
 CW_btn.configure(font=("Arial", "12"))
-CW_btn.grid(row=7, column=2, sticky="w", padx=15, pady=10)
+CW_btn.grid(row=9, column=2, sticky="w", padx=15, pady=10)
 
 
 s_btm_srv_spin_time = tk.Scale(b_srv_label, label="TIME: spin (ms)", font=('arial','11'), orient='horizontal',
-                               length=190, from_=300, to_=1000,  resolution=50, command=b_spin_time)
-s_btm_srv_spin_time.grid(row=8, column=0, sticky="w", padx=12, pady=5)
+                               length=170, from_=300, to_=1200,  resolution=50, command=b_spin_time)
+s_btm_srv_spin_time.grid(row=10, column=0, sticky="w", padx=12, pady=5)
 s_btm_srv_spin_time.set(b_spin_time)
 
 
 s_btm_srv_rotate_time = tk.Scale(b_srv_label, label="TIME: rotate (ms)", font=('arial','11'), orient='horizontal',
-                               length=190, from_=300, to_=1000,  resolution=50, command=b_rotate_time)
-s_btm_srv_rotate_time.grid(row=8, column=1, sticky="w", padx=12, pady=5)
+                               length=170, from_=300, to_=1300,  resolution=50, command=b_rotate_time)
+s_btm_srv_rotate_time.grid(row=10, column=1, sticky="w", padx=12, pady=5)
 s_btm_srv_rotate_time.set(b_rotate_time)
 
 
 s_btm_srv_rel_time = tk.Scale(b_srv_label, label="TIME: release (ms)", font=('arial','11'), orient='horizontal',
-                               length=190, from_=0, to_=400,  resolution=50, command=b_rel_time)
-s_btm_srv_rel_time.grid(row=8, column=2, sticky="w", padx=12, pady=5)
+                               length=170, from_=0, to_=400,  resolution=50, command=b_rel_time)
+s_btm_srv_rel_time.grid(row=10, column=2, sticky="w", padx=12, pady=5)
 s_btm_srv_rel_time.set(b_rel_time)
+
+
 
 
 
 #### webcam  ####
 webcam_label = tk.LabelFrame(settingWindow, text="Webcam", labelanchor="nw", font=("Arial", "12"))
-webcam_label.grid(row=9, column=0, columnspan=6, sticky="w", padx=20, pady=15)
+webcam_label.grid(row=9, column=0, columnspan=6, sticky="w", padx=20, pady=10)
 
 # radiobuttons for webcam source
 webcam_nums=[0,1] #,2]
@@ -2033,7 +2336,8 @@ root.mainloop()                                   # tkinter main loop
 ########################################################################################################################
 
 
-# In[ ]:
+
+
 
 
 
