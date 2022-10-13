@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[23]:
-
-
-#!/usr/bin/env python
-# coding: utf-8
 
 """
 #############################################################################################################
-# Andrea Favero          11 October 2022
+# Andrea Favero          13 October 2022
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
@@ -264,28 +259,27 @@ robot_moves=""                 # string variable holding all the robot moves (ro
 cube_status={}                 # dictionary variable holding the cube status, for GUI update to robot permutations
 left_moves={}                  # dictionary holding the remaining robot moves
 
-timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')    # timestamp used on logged data and other locations
+timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')      # timestamp used on logged data and other locations
 
 
-# read settings from the text files
-fname1 = os.path.join('.','Cubotino_settings_backup.txt')             # backup file with servos settings
-fname2 = os.path.join('.','Cubotino_cam_settings_backup.txt')         # backup file with cam settings
-personal_settings = os.path.isfile(fname1) and os.path.isfile(fname2) # bool for both files existance
-
-if personal_settings:             # case the settings backup files exist (user have made personal settings)
-    # this approach gives priority to personal settings, to prevent issues after a git update
-    data = read_settings('Cubotino_settings_backup.txt')  # from servos backup txt file to list of settings
+# read settings from the text files, giving priority to personal settings, to prevent issues after a git update
+fname = os.path.join('.','Cubotino_settings_backup.txt')     # backup file with servos settings
+if os.path.isfile(fname):         # case the settings backup files exist (user have made personal settings)
+    data = read_settings('Cubotino_settings_backup.txt')     # from servos backup txt file to list of settings
     if len(data) > 0:             # case the file reading returned a list of settings
         get_settings(data)        # call the function that makes global these servos settings 
-    data = read_settings('Cubotino_cam_settings_backup.txt') # from cam backup txt file to list of settings
-    if len(data) > 0:             # case the file reading returned a list of settings
-        get_cam_settings(data)    # call to the function that makes global these cam settings 
-    
-elif not personal_settings:       # case the settings backup files do not exist (user has not made personal settings yet)
+else:             # case the settings backup files do not exist (user has not made personal settings yet)
     data = read_settings('Cubotino_settings.txt') # from servos settings txt file to list of settings
     if len(data) > 0:             # case the file reading returned a list of settings
         get_settings(data)        # call to the function that makes global these servos settings 
-    
+
+# read settings from the text files, giving priority to personal settings, to prevent issues after a git update
+fname = os.path.join('.','Cubotino_cam_settings_backup.txt') # backup file with cam settings
+if os.path.isfile(fname):         # case the cam settings backup files exist (user have made personal settings)
+    data = read_settings('Cubotino_cam_settings_backup.txt') # from cam backup txt file to list of settings
+    if len(data) > 0:             # case the file reading returned a list of settings
+        get_cam_settings(data)    # call to the function that makes global these cam settings 
+else:             # case the settings backup files do not exist (user has not made personal settings yet)
     data = read_settings('Cubotino_cam_settings.txt') # from cam settings txt file to list 
     if len(data) > 0:             # case the file reading returned a list of settings
         get_cam_settings(data)    # call to the function that makes global these cam settings 
@@ -2334,17 +2328,5 @@ root.protocol("WM_DELETE_WINDOW", close_window)   # the function close_function 
 root.mainloop()                                   # tkinter main loop
 
 ########################################################################################################################
-
-
-
-
-
-
-
-
-
-# In[ ]:
-
-
 
 
