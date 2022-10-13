@@ -36,5 +36,6 @@ In case you find this robot too simple, or you're interested to a self-enclosed 
 
 
 # Please leave a feedback if you build it
-I hope many of you will decide to build your own CUBOTino, and that you'll enjoy it as much much as I did.
-I hope you will also post an "I Made it", on the Instructables site of this project (link above); I can ensure you, seeing a new born CUBOTino makes me feel very well 🙂
+I hope many of you will decide to build your own CUBOTino, and that you'll enjoy it as much much as I did.<br />
+I hope you will also post an "I Made it", on the Instructables site of this project (link above); .<br />
+I can ensure you, seeing a new born CUBOTino makes me feel very well 🙂
