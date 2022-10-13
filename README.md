@@ -33,3 +33,8 @@ In case you find this robot too simple, or you're interested to a self-enclosed 
 - It reuses most of the parts from this Base version !!!<br />
 - Thanks to a camera and a SBC (Raspberry Pi) the robot if fully autonomous.<br />
 - You can see it at: [https://youtu.be/udr6tryxA_Y](https://youtu.be/dEOLhvVMcUg).<br />
+
+
+# Please leaves a feedback if you build it
+I hope many of you will decide to build your own CUBOTino, and that you'll enjoy it as much much as I did.
+I hope you will also post an "I Made it", on the Instructables site of this project (link in the video description); I can ensure you, seeing a new born CUBOTino makes me feel very well 🙂
