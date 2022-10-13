@@ -4,7 +4,7 @@
 
 """
 #############################################################################################################
-# Andrea Favero          13 October 2022
+# Andrea Favero          13 October 2022 
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
