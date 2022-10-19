@@ -4,7 +4,7 @@
 
 ''' 
 #############################################################################################################
-#  Andrea Favero          05 October 2022
+#  Andrea Favero          19 October 2022
 #
 #  Script made to learn computer vision and to improve coding skills
 #
@@ -24,27 +24,21 @@
 #############################################################################################################
 '''
 
-
 import cv2
 import numpy as np
 import math
 import statistics
 import time
 import datetime as dt
-try:
-    from IPython.display import clear_output        # function to clear the terminal on Interactive Python (i.e. Jupyter notebook) 
-except:
-    pass
 
 
 try:
     import sys, platform
-    print()
-    print(f'Running on: {platform.system()}')       # print to terminal, the platform used
-    print(f'Python version: {sys.version}')         # print to termina the python version
-    print(f'CV2 version: {cv2.__version__}')        # print to terminal the cv2 version
-    print('webcam module AF (05 October 2022)')        # print to terminal the webcam module importing
-    print()
+    print('\n===================  webcam module AF (19 October 2022)  ===========================')
+    print(f'Running on: {platform.system()}')         # print to terminal, the platform used
+    print(f'Python version: {sys.version}')           # print to termina the python version
+    print(f'CV2 version: {cv2.__version__}')          # print to terminal the cv2 version
+#     print('webcam module AF (18 October 2022)')       # print to terminal the webcam module importing
 except:
     pass
 
@@ -64,10 +58,10 @@ if not solver_found:                                  # case the library was not
         twophase_solver_found = True                  # boolean to track no exception on import the installed solver
     except:                                           # exception is raised if no library in venv or other issues
         twophase_solver_found = False                 # boolean to track exception on importing the installed solver
-     
+
 if not solver_found and not twophase_solver_found:    # case no one solver has been imported
     print('\n(Kociemba) twophase solver not found')   # feedback is printed to the terminal
-
+print('====================================================================================\n')
 
 
 
@@ -82,35 +76,7 @@ def webcam(cam_num, cam_width=640, cam_height=360):
     global camera
     
     cam_num=int(cam_num)          # cam_num =0 is typically the one integrated on laptops
-    
-    camera_obj=False
-    if not camera_obj:
-        try:
-            camera = cv2.VideoCapture(cam_num, cv2.CAP_DSHOW)         # camera object, that should work on Windows OS
-#             print("cv2.CAP_DSHOW IO Videostreamer")
-            camera_obj=True
-        except:
-#             print("cv2.CAP_DSHOW doesn't work")
-            camera_obj=False    
-    
-    if not camera_obj:
-        try:
-            camera = cv2.VideoCapture(cam_num, cv2.CAP_ANY)       # camera object, that should work on Mac
-#             print("cv2.CAP_ANY IO Videostreamer")
-            camera_obj=True
-        except:
-            camera_obj=False
-#             print("cv2.CAP_ANY doesn't work")
-            
-    if not camera_obj:
-        try:
-            camera = cv2.VideoCapture(cam_num, cv2.CAP_V4L2)      # camera object, that should work on Ubuntu
-#             print("cv2.CAP_V4L2 IO Videostreamer")
-            camera_obj=True
-        except:
-#             print("cv2.CAP_V4L2 doesn't work")
-            camera_obj=False
-  
+    camera = cv2.VideoCapture(cam_num, cv2.CAP_DSHOW)         # camera object
   
     camera_width_resolution = int(cam_width)                  # laptop camera, width resolution setting
     camera_height_resolution = int(cam_height)                # laptop camera, height resolution setting
@@ -255,6 +221,285 @@ def inclination_check(data):
 
 
 
+def cube_inclination(facelets):
+    ''' Calculates the average cube inclination from the horizon, in radians.
+    Argument is the facelets list with first N contours detected
+    The inclination is calculated on the first square edge, the top one, based on the first
+    two square points after ordering them CW.'''
+
+    incl_list=[]
+    for i in range(len(facelets)):
+        # based on the inclination between two point of each facelet
+        data=facelets[i].get('cont_ordered')
+        if data[1][1] != data[0][1]: # edge not horizontal (by chance, and giving error on math calculation)
+            inclination = - math.atan(((data[1][1]-data[0][1]))/((data[1][0]-data[0][0]))) #inclination in radians
+        else:
+            inclination = 0
+        incl_list.append(inclination)
+    return statistics.median(incl_list)
+
+
+
+
+
+
+def facelet_grid_pos(x, y):
+    """returns the face facelet number, based on the coordinates of the contour center, and other parameters.
+        This is used to map which in facelets a contour has been detected, and which not."""
+    
+    # Below dict has the face facelets number as value; keys are facelet coordinate expressed as string combination of column and row
+    facelet_number = {'11':0, '21':1, '31':2,
+                      '12':3, '22':4, '32':5,
+                      '13':6, '23':7, '33':8}
+    
+    facelet = str(x) + str(y)                 # facelet string combining column (x) and row (y) of the facelet
+    if facelet in facelet_number:             # case the facelecet is in the dict
+        return facelet_number[facelet]        # facelet number is returned
+
+
+
+
+
+
+def median_point(data):
+    """Function returns the coordinate of the mediant point out of an arreay of points."""
+    return tuple(np.int_(np.median(data, axis=0)))
+
+
+
+
+
+
+def median_dist(data, point):
+    """Function calculates the distance from a point to a list of coordinates.
+        It returns an array of distances, and the median distance."""
+    s = np.array(data)
+    p = np.array(point)
+    dist = np.linalg.norm(p - s, axis=1)
+    med_dist = np.median(dist)
+    return dist, med_dist
+
+
+
+
+
+
+def rotate(points, origin, angle):
+    """Function to rotate an array of 2d coordinates arount an origin by an angle in radians."""
+    R = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle),  np.cos(angle)]])
+    o = np.atleast_2d(origin)
+    p = np.atleast_2d(points)
+#     if debug:     # case the debug variable is set True
+#         print("--> points to be rotated", points)
+#         print("--> points rotated:", p)
+    return np.int_(np.squeeze((R @ (p.T-o.T) + o.T).T))
+
+
+
+
+
+
+def estimate_facelets(facelets, angle):
+    """Estimates the remaing facelets location, when there are at least N detected facelets.
+        This function is interrupted if one row or column is fully empty; In this way the cube width and height
+        is well known, enabling a good estimation for the missed facelets position.
+    
+    
+                x_1     x_2     x_3              X
+           --|----------------------------------->
+             |       |       |       |
+        y_1  |   1   |   2   |   3   |   row 1
+             |       |       |       |
+             |-----------------------
+             |       |       |       |
+        y_2  |   4   |   5   |   6   |   row 2
+             |       |       |       |
+             |----------------------- 
+             |       |       |       |
+        y_3  |   7   |   8   |   9   |   row 3
+             |       |       |       |
+             |-----------------------
+             |
+             | clmn1   clmn2   clmn3
+             |
+             |
+           Y v
+         
+    """
+
+    angle = 1.5*angle     # detected contours tends to be less inclined from horizon than the facelets
+    
+# current cube face characteristics, based on detected facelets
+    cont_xy = []                               # empty list to fill with contours centers x,y coordinates
+    cont_x = []                                # empty list to fill with contours centers x coordinates
+    cont_y = []                                # empty list to fill with contours centers y coordinates
+    cont_area = []                             # empty list to fill with contours areas
+    
+    for i in range(len(facelets)):             # iteration over the quantity of facelets already detected
+        x = facelets[i]['cx']                  # x coordinate for the facelet[i] center
+        y = facelets[i]['cy']                  # y coordinate for the facelet[i] center
+        cont_xy.append((x, y))                 # all the contours centers x,y coordinates are listed
+        cont_x.append(x)                       # all the contours centers x coordinates are listed
+        cont_y.append(y)                       # all the contours centers y coordinates are listed
+        cont_area.append(facelets[i]['area'])  # all the contours areas are listed
+        
+    xy_0 = median_point(cont_xy)               # median point from the detected centers
+    x0 = xy_0[0]                               # x coordinate of the median point
+    y0 = xy_0[1]                               # y coordinate of the median point
+        
+    if len(cont_xy) != 0:                      # case there are facelets center coordinates
+        cont_xy_rot = rotate(cont_xy, xy_0, angle) # center coordinates of the detected facelets are rotated to 'horizon'
+        dist, avg_pts_distance = median_dist(cont_xy, xy_0) # distance from median point (array), and median distance value
+    
+# check if there are contours too far to be part of the cube face
+    d_to_exclude = []                          # empty list to be populated with the index of facelets
+    for i in range(len(dist)):                 # iteration on the array of distances from the median point
+        if dist[i]/avg_pts_distance > 1.5:     # case the distance is more than 1.5 times the median distance
+            d_to_exclude.append(i)             # index of that facelet is added to the list
+    if len(d_to_exclude)>=1:                   # case facelets to be removed, cause excess distance from median point
+        d_to_exclude.sort(reverse=True)        # list order is reversed, making easy to remove
+        for i in d_to_exclude:                 # iteration on the list of contour index to be removed
+            facelets.pop(i)                    # contour too far are removed from list of potential facelets                      
+
+# search which are the missed facelets, after removing facelerts being too far from the center of detected facelets
+    med_a = int(statistics.median(cont_area))  # median area for the facelets in function argument
+    cx = cont_x.copy()         # list copy of contours centers x coordinates
+    cy = cont_y.copy()         # list copy of contours centers y coordinates
+    cont_x.sort()              # sorted list with contours centers x coordinates
+    cont_y.sort()              # sorted list with contours centers y coordinates
+    
+    x_1 = []                   # empty list to fill with x coordinates of first column (smaller x)
+    x_2 = []                   # empty list to fill with x coordinates of second column (medium x)
+    x_3 = []                   # empty list to fill with x coordinates of third column (larger x)
+    y_1 = []                   # empty list to fill with y coordinates of first row (smaller y)
+    y_2 = []                   # empty list to fill with y coordinates of second row (medium y)
+    y_3 = []                   # empty list to fill with y coordinates of third row (larger y)
+
+    x_low = cont_x[0]          # smaller x coordinate of facelets countours is assigned to the variable x_low
+    x_high = cont_x[-1]        # bigger x coordinate of facelets countours is assigned to the variable x_high
+    y_low = cont_y[0]          # smaller y coordinate of facelets countours is assigned to the variable y_low
+    y_high = cont_y[-1]        # bigger y coordinate of facelets countours is assigned to the variable y_high 
+    
+    dist = int(max(x_high-x_low, y_high-y_low)/4) # facelets separation distance from min/max detected contours centers
+    
+    x_1.append(x_low)          # smaller x coordinate of facelets countours is appended to the first column list
+    y_1.append(y_low)          # smaller y coordinate of facelets countours is appended to the first row list
+    
+    for i in range(1, len(facelets)):                                  # iteration on detected facelets contours
+        if x_low <= cont_x[i] and cont_x[i] < x_low + dist:            # case the contour center x coordinate is "small"
+            x_1.append(cont_x[i])                                      # contour x coordinate is appended to the of first column list (small x)
+        elif x_low + dist <= cont_x[i] and cont_x[i] < x_high - dist:  # case the contour center x coordinate is "medium"
+            x_2.append(cont_x[i])                                      # contour x coordinate is appended to the of second column list (medium x)
+        else:                                                          # case the contour center x coordinate is "large"
+            x_3.append(cont_x[i])                                      # contour x coordinate is appended to the of third column list (large x)
+        if y_low <= cont_y[i] and cont_y[i] < y_low + dist:            # case the contour center y coordinate is "small"
+            y_1.append(cont_y[i])                                      # contour y coordinate is appended to the of first row list (small y)
+        elif y_low + dist <= cont_y[i] and cont_y[i] < y_high - dist:  # case the contour center y coordinate is "medium"
+            y_2.append(cont_y[i])                                      # contour y coordinate is appended to the of second row list (medium y)
+        else:                                                          # case the contour center y coordinate is "large"
+            y_3.append(cont_y[i])                                      # contour y coordinate is appended to the of third row list (large y)
+    
+    if len(x_1)==0 or len(x_2)==0 or len(x_3)==0 or len(y_1)==0 or len(y_2)==0 or len(y_3)==0: # case one or more of the six lists are empty
+        return facelets                                                # function returns the already detected facelets
+    
+    else:                                      # case no one of the six lists is empty
+        x1_avg = int(sum(x_1)/len(x_1))        # average x coordinate for the contours on first column (small x)
+        x2_avg = int(sum(x_2)/len(x_2))        # average x coordinate for the contours on second column (medium x)
+        x3_avg = int(sum(x_3)/len(x_3))        # average x coordinate for the contours on third column (large x)
+        y1_avg = int(sum(y_1)/len(y_1))        # average y coordinate for the contours on first row (small y)
+        y2_avg = int(sum(y_2)/len(y_2))        # average y coordinate for the contours on second row (medium y)
+        y3_avg = int(sum(y_3)/len(y_3))        # average y coordinate for the contours on third row (large y)
+    
+    dist = int((x_high - x_low + y_high - y_low)/8)   # facelets separation distance from min/max detected contours centers
+    detected = []                                     # list for the column row of the face grid
+    for i in range(len(facelets)):                    # iteration over the detected facelets
+        if cx[i]<x_low+dist:                          # case the facelet contour center x coordinate is on first grid column
+            x=1                                       # 1 (as column 1) is assigned
+        elif cx[i]>x_low+dist and cx[i]<x_high-dist:  # case the facelet contour center x coordinate is on second grid column
+            x=2                                       # 2 (as column 2) is assigned
+        elif cx[i]>x_high-dist:                       # case the facelet contour center x coordinate is on third grid column
+            x=3                                       # 3 (as column 3) is assigned
+        if cy[i]<y_low+dist:                          # case the facelet contour center x coordinate is on first grid row                          
+            y=1                                       # 1 (as row 1) is assigned
+        elif cy[i]>y_low+dist and cy[i]<y_high-dist:  # case the facelet contour center x coordinate is on second grid row
+            y=2                                       # 2 (as row 2) is assigned
+        elif cy[i]>y_high-dist:                       # case the facelet contour center x coordinate is on third grid row
+            y=3                                       # 3 (as row 3) is assigned
+        detected.append(facelet_grid_pos(x, y))       # list with facelet number is populated
+
+    s = set(detected)                                        # list with detected facelets numbers is transformed to set
+    missed = [x for x in (0,1,2,3,4,5,6,7,8) if x not in s]  # list with missed facelets numbers
+    
+    if (len(facelets)+len(missed)) != 9:      # case the total of detected and estimated facelets differ from 9
+        return []                             # an empty list is returned
+
+    est = []                                  # list for xy coordinates for the estimated facelet center locations
+    for facelet in missed:                    # iteration over the missed facelets numbers
+        if facelet == 0:                      # case the missed facelet is 0
+            est.append((x1_avg, y1_avg))      # average xy coordinates for column 1 and row 1 are appended
+        elif facelet == 1:                    # case the missed facelet is 1
+            est.append((x2_avg, y1_avg))      # average xy coordinatees for column 2 and row 1 are appended
+        elif facelet == 2:                    # case the missed facelet is 2
+            est.append((x3_avg, y1_avg))      # average xy coordinats for column 3 and row 1 are appended
+        elif facelet == 3:                    # case the missed facelet is 3
+            est.append((x1_avg, y2_avg))      # average xy coordinates for column 1 and row 2 are appended
+        elif facelet == 4:                    # case the missed facelet is 4
+            est.append((x2_avg, y2_avg))      # average xy coordinates for column 2 and row 2 are appended
+        elif facelet == 5:                    # case the missed facelet is 5
+            est.append((x3_avg, y2_avg))      # average xy coordinates for column 3 and row 2 are appended
+        elif facelet == 6:                    # case the missed facelet is 6
+            est.append((x1_avg, y3_avg))      # average xy coordinates for column 1 and row 3 are appended
+        elif facelet == 7:                    # case the missed facelet is 7
+            est.append((x2_avg, y3_avg))      # average xy coordinates for column 2 and row 3 are appended
+        elif facelet == 8:                    # case the missed facelet is 8
+            est.append((x3_avg, y3_avg))      # average xy coordinates for column 3 and row 3 are appended
+        else:                                 # case that shouldn't exist
+            print("error on estimating the missed facelets")  # feedback is printed to the terminal
+    
+    if len(est) == 0:                  # case there aren't estimated facelets
+        return facelets                # the funtion is interrupted
+    
+    est = rotate(est, (x0,y0), -angle) # center coordinates of the detected + estimated facelets are rotated back 
+
+# contours generation on the estimated facelet(s)
+    semi_side = int(0.5*dist/2)                         # half side dimension for the estimated contour square
+    if len(missed)==1:                                  # case there is one missed facelet, to be estimated
+        tl = [est[0] - semi_side, est[1] - semi_side]   # top left contour coordinate, calculated from the estimated contour center point
+        tr = [est[0] + semi_side, est[1] - semi_side]   # top right contour coordinate, calculated from the estimated contour center point
+        br = [est[0] + semi_side, est[1] + semi_side]   # bottom right contour coordinate, calculated from the estimated contour center point
+        bl = [est[0] - semi_side, est[1] + semi_side]   # bottom left contour coordinate, calculated from the estimated contour center point
+        pts=np.array([tl, tr, br, bl], dtype="int32")   # estimated contour coordinates
+        contour_tmp = [pts]                             # list is made with the ordered outer contour
+        tmp = {'area': med_a, 'cx': est[0], 'cy': est[1], 'contour': pts, 'cont_ordered':pts} # dict with relevant contour info
+        facelets.append(tmp)      # estimated facelets relevant info are appended to the detected facelets list
+    
+    elif len(missed)>1:                                  # case there are more than one missed facelet, to be estimated
+        for i, facelet in enumerate(missed):                      # iteration over the missed facelets
+            tl = [est[i][0] - semi_side, est[i][1] - semi_side]   # top left contour coordinate, calculated from the estimated contour center point
+            tr = [est[i][0] + semi_side, est[i][1] - semi_side]   # top right contour coordinate, calculated from the estimated contour center point
+            br = [est[i][0] + semi_side, est[i][1] + semi_side]   # bottom right contour coordinate, calculated from the estimated contour center point
+            bl = [est[i][0] - semi_side, est[i][1] + semi_side]   # bottom left contour coordinate, calculated from the estimated contour center point
+            pts=np.array([tl, tr, br, bl], dtype="int32")         # estimated contour coordinates      
+            contour_tmp = [pts]                                   # list is made with the ordered outer contour
+            tmp = {'area': med_a, 'cx': est[i][0], 'cy': est[i][1], 'contour': pts, 'cont_ordered':pts} # dict with relevant contour info
+            facelets.append(tmp)   # estimated facelets relevant info are appended to the detected facelets list
+        
+# check if there are (estimated) contours overlapping the others (too close to the center facelet)
+    if len(facelets)==9:                       # 9 contours have cube compatible characteristics
+        facelets = order_9points(facelets, new_center=[])  # contours are ordered from top left
+        d_to_exclude = distance_deviation(facelets, check='below', delta=-0.15) # facelets to remove due too low inter-distance
+        if len(d_to_exclude)>=1:               # case facelets to be removed, cause to less distance from median point
+            d_to_exclude.sort(reverse=True)    # list order is reversed, making easy to remove
+            for i in d_to_exclude:             # iteration on the list of contour index to be removed
+                facelets.pop(i)                # contour too far are removed from list of potential facelets
+    
+    return facelets     # detected facelets combined with estimated facelets
+
+
+
+
+
+
 def read_facelets():
     ''' Function that uses cv2 to retrieve contours, from an image (called frame in this case)
     Contours are searched on the 'eroded edges' frame copy
@@ -273,7 +518,7 @@ def read_facelets():
     # informative text is added on frame bottom, as guidance
     cv2.putText(frame, str('ESC to escape'), (10, int(h-12)), font, fontScale*1.2,fontColor,lineType)
 
-    roi = frame.copy()[background_h:h, offset:w]       # roi is made on a slice from the copy of the frame image
+    roi = frame.copy()[background_h:h, offset:w]  # roi is made on a slice from the copy of the frame image
 #         roi_height, roi_width, _ = roi.shape    # returns roi's dimensions
     cube_centers_color_ref(frame)           # returns the colored centers cube (1 facelet) within the cube's frame
     plot_colors(BGR_mean, edge, frame, font, fontScale, lineType)
@@ -307,7 +552,7 @@ def get_approx_contours(component):
 
 
 
-def get_facelets(contour, hierarchy):
+def get_facelets(facelets, contour, hierarchy):
     ''' Contours are analyzed in order to detect the cube's facelets
     Argument are simplified contours
     Returns contours having square characteristics
@@ -320,14 +565,16 @@ def get_facelets(contour, hierarchy):
     global min_area, max_area
     
     # on April 2022 changed (square_ratio, rhombus_ratio, max_inclination) to very permissive values
-    square_ratio=0.4    #0.3    # considered like a square when [(max_side-min_side)/avg edge  < square_ratio], where 0 = perfect square
-    rhombus_ratio=0.6   #0.8    # considered like a square when [max_diagonal/min_diagonal > rhombus_ratio], where 1 = perfect square
-    max_inclination=50  #20     # max inclination limit for the 1st facelet vs horizon
-         
-    area = cv2.contourArea(contour)   # area of each passed contour is retrieved
+    square_ratio=0.4     # considered like a square when [(max_side-min_side)/avg edge  < square_ratio], where 0 = perfect square
+    rhombus_ratio=0.6    # considered like a square when [max_diagonal/min_diagonal > rhombus_ratio], where 1 = perfect square
+    if estimate_fclts:
+        max_inclination=20          # max inclination limit for the 1st facelet vs horizon in degrees
+    else:
+        max_inclination=50          # max inclination limit for the 1st facelet vs horizon in degrees
+    area = cv2.contourArea(contour) # area of each passed contour is retrieved
     
-    if hierarchy>=0:                  # when contour is an outermost (it has inner contour/contours) 
-        area =0                      # contour area is forced to zero to skip that contour
+    if hierarchy>=0:                # when contour is an outermost (it has inner contour/contours) 
+        area=0                      # contour area is forced to zero to skip that contour
     
     if min_area < area < max_area:                       # filter out too small and too large contours (areas)                                              # that contour isn't  
         contour_squeeze = np.squeeze(contour)                     # flattens out the list of list used by contours
@@ -348,12 +595,17 @@ def get_facelets(contour, hierarchy):
                 
                 facelets.append(tmp)                        # list with the dictionary of the potential facelets contrours
                 
-                if len(facelets)>=7:                        # when potential contours are 7
+                N_min = 7
+                if len(facelets) >= N_min:                  # when potential contours are at leat equal to N_min
                     a_to_exclude = area_deviation(facelets) # function that analyzes facelets area, and list those eventually with high dev from median
                     if len(a_to_exclude)>=1:                # case when there are facelets to be excluded, due to too different area from median one
-                        a_to_exclude.sort(reverse=True)     # list order is reversed, making easy easy to remove
+                        a_to_exclude.sort(reverse=True)     # list order is reversed, making easy to remove
                         for i in a_to_exclude:              # contour deviating too much on area are removed from list of potential facelets
-                            facelets.pop(i)                 # contour deviating too much on area are removed from list of potential facelets
+                            facelets.pop(i)                 # contour deviating too much on area are removed from list of potential facelets                      
+
+                if estimate_fclts and len(facelets) >= N_min:  # case estimation is enabled and still least N_min facelets
+                    cube_incl = cube_inclination(facelets)     # cube inclination is retrieved
+                    facelets = estimate_facelets(facelets, cube_incl)   # function to estimate remaining facelets     
     
     return facelets   # list of potential facelet's contour is returned
 
@@ -392,11 +644,12 @@ def area_deviation(data):
 
 
 
-def distance_deviation(data, delta=0.25):
+def distance_deviation(data, check='above', delta=0.25):
     ''' Checks whether the distances between the 9 contours (centers) are within a certain deviation from the median
     In other words, a sanity check if all the 9 facelet are compatible with a 3x3 square array shape
-    Aim of this funtion is to exclude contours generated outside the cube, due to square like shapes the webcam
-    detects at the user background, face, cloths
+    Aim of this funtion is to exclude contours:
+      1) generated outside the cube, due to square-like shapes the webcam detects at the user background, face, cloths.
+      2) estimated yet overlapping some of the detected contours (check = 'below' in this case).
     The approach checks indipendently the 6 horizontal distances from the contours center, from the 6 vertical
     Considering the cube can have a certain tilting angle (inclination), Pitagora theorem is used.
     Function return a list with the index of the countours to be removed from the list of potential facelets.'''
@@ -419,19 +672,27 @@ def distance_deviation(data, delta=0.25):
         # vertical distance between the contours centers
         dist=math.sqrt((data[i]['cx']-data[k]['cx'])**2 + (data[i]['cy']-data[k]['cy'])**2)
         distance_list_v.append(dist)
-
-    dist_median_h = statistics.median(distance_list_h)                # median value for horiz distances
+    
+    dist_median_h = statistics.median(distance_list_h)         # median value for horiz distances
     for i in range(len(distance_list_h)):
         delta_dist_h=(distance_list_h[i]-dist_median_h)/dist_median_h # deviation in horiz distance
-        if delta_dist_h > delta:                                      # filter if horiz deviation > threshold
-            d_to_exclude.append(i) # list with contours indexto exlude, due excess on horiz deviation from median
+        if check == 'above':
+            if delta_dist_h > delta:                           # filter if horiz deviation > threshold
+                d_to_exclude.append(i) # list with contours indexto exlude, due excess on horiz deviation from median
+        elif check == 'below':
+            if delta_dist_h < delta:                           # filter if horiz deviation > threshold
+                d_to_exclude.append(i) # list with contours indexto exlude, due too small horiz deviation from median
 
-    dist_median_v = statistics.median(distance_list_v)                # median value for vert distances
+    dist_median_v = statistics.median(distance_list_v)         # median value for vert distances
     for i in range(len(distance_list_v)):
         delta_dist_v=(distance_list_v[i]-dist_median_v)/dist_median_v # deviation in vert distance
-        if delta_dist_v > delta and i not in d_to_exclude: # filter if horiz deviation > threshold
-            d_to_exclude.append(i)  # list with contours indexto exlude, due excess on vert deviation from median
-
+        if check == 'above':
+            if delta_dist_v > delta and i not in d_to_exclude: # filter if horiz deviation > threshold
+                d_to_exclude.append(i)  # list with contours indexto exlude, due excess on vert deviation from median
+        elif check == 'below':
+            if delta_dist_v < delta and i not in d_to_exclude: # filter if horiz deviation > threshold
+                d_to_exclude.append(i)  # list with contours indexto exlude, due too small vert deviation from median
+        
     return d_to_exclude
 
 
@@ -710,9 +971,9 @@ def cube_colors_interpreted(BGR_detected):
         V=hsv[0][0][2]
         HSV_detected[i]=(H,S,V)
 
-    if debug:
-        print(f'\nBGR_detected: {BGR_detected}')
-        print(f'\nHSV: {HSV_detected}')
+    if debug:                                      # case the debug variable is set True
+        print(f'\nBGR_detected: {BGR_detected}')   # feedback is printed to the terminal
+        print(f'\nHSV: {HSV_detected}')            # feedback is printed to the terminal
 
     # Step2: center's facelets are used as initial reference
     cube_ref_colors = {'white':BGR_detected[4], 'red':BGR_detected[13], 'green':BGR_detected[22],
@@ -800,8 +1061,8 @@ def cube_colors_interpreted(BGR_detected):
     
     #step 10: function to get the color (sides) order, list of colored center's facelets and white center facelet  
     cube_color_sequence, HSV_analysis = retrieve_cube_color_order(VS_value, Hue)
-    if debug:
-        print(f'\nCube_color_sequence: {cube_color_sequence}')
+    if debug:                                     # case the debug variable is set True
+        print(f'\nCube_color_sequence: {cube_color_sequence}') # feedback is printed to the terminal
     
     return cube_status, HSV_detected, cube_color_sequence
 
@@ -823,7 +1084,7 @@ def retrieve_cube_color_order(VS_value,Hue):
     cube_color_sequence=['','','','','','']          # list to store the faces colors order
     
     
-    if debug:
+    if debug:                                        # case the debug variable is set True
         print(f'\nHue centers: {Hue[centers[0]]}, {Hue[centers[1]]} , {Hue[centers[2]]}, {Hue[centers[3]]}, {Hue[centers[4]]}, {Hue[centers[5]]}')
     
     VS_centers=[VS_value[facelet] for facelet in centers]  # V-S value measured on the cube side center under analysis
@@ -838,18 +1099,18 @@ def retrieve_cube_color_order(VS_value,Hue):
         yellow_center=white_center-27                # yellow is at opposite side of white
     
     try:
-        centers.remove(white_center)                     # white facelet is removed from the list of center's facelets
+        centers.remove(white_center)                 # white facelet is removed from the list of center's facelets
     except:
         HSV_analysis=False
-        if debug:
-            print(f'\nIssue with the white_center')
+        if debug:                                    # case the variable debug is set True 
+            print(f'\nIssue with the white_center')  # feedback is printed to the terminal
     
     try:
-        centers.remove(yellow_center)                    # yellow facelet is removed from the list of center's facelets
+        centers.remove(yellow_center)                # yellow facelet is removed from the list of center's facelets
     except:
         HSV_analysis=False
-        if debug:
-            print(f'\nIssue with the yellow_center')
+        if debug:                                    # case the variable debug is set True
+            print(f'\nIssue with the yellow_center') # feedback is printed to the terminal
        
     
     # searching for the red and orange cube's side
@@ -870,15 +1131,15 @@ def retrieve_cube_color_order(VS_value,Hue):
         centers.remove(red_center)            # red facelet is removed from the list of center's facelets
     except:
         HSV_analysis=False
-        if debug:
-            print(f'\nIssue with the red_center')
+        if debug:                             # feedback is printed to the terminal
+            print(f'\nIssue with the red_center')  # feedback is printed to the terminal
     
     try:
         centers.remove(orange_center)         # orange facelet is removed from the list of center's facelets
     except:
         HSV_analysis=False
-        if debug:
-            print(f'\nIssue with the orange_center')
+        if debug:                             # feedback is printed to the terminal
+            print(f'\nIssue with the orange_center')  # feedback is printed to the terminal
     
     if HSV_analysis==True:
         # last two colors are blue and green, wherein blue has the highest Hue
@@ -900,8 +1161,8 @@ def retrieve_cube_color_order(VS_value,Hue):
             elif value == green_center:
                 cube_color_sequence[i] = 'green'
     else:
-        if debug:
-            print('\nNot found 6 different colors at center facelets')
+        if debug:                                  # feedback is printed to the terminal
+            print('\nNot found 6 different colors at center facelets') # feedback is printed to the terminal
         
     return cube_color_sequence, HSV_analysis
 
@@ -926,23 +1187,23 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
     This function returns the interpreted facelet colors, on the Kociemba order.
     The function also returns the cube color sequence, to generate a nice decoration on screen.''' 
 
-    VS_value={}                             # dict to store the V-S (Value-Saturation) value of all facelets
-    Hue={}                                  # dict to store the Hue value of all facelets
+    VS_value={}                          # dict to store the V-S (Value-Saturation) value of all facelets
+    Hue={}                               # dict to store the Hue value of all facelets
     
     i=0
-    for H,S,V in HSV_detected.values():           # Hue, Saturation and Value are retrieved from the HSV dict
-        VS_value[i]=int(V)-int(S)                 # V-S (value-Saturation) delta value for all the facelet, populates the related dict
-        Hue[i]=int(H)                             # Hue, for all the facelets, populates the related dict
+    for H,S,V in HSV_detected.values():  # Hue, Saturation and Value are retrieved from the HSV dict
+        VS_value[i]=int(V)-int(S)        # V-S (value-Saturation) delta value for all the facelet, populates the related dict
+        Hue[i]=int(H)                    # Hue, for all the facelets, populates the related dict
         i+=1
-    if debug:
-        print(f'\nV_values: {VS_value}')
-        print(f'\nHue: {Hue}')
+    if debug:                            # case the variable debug is set True
+        print(f'\nV_values: {VS_value}') # feedback is printed to the terminal
+        print(f'\nHue: {Hue}')           # feedback is printed to the terminal
     
     
     # function to get the color (sides) order, list of colored center's facelets and white center facelet  
     cube_color_sequence, HSV_analysis = retrieve_cube_color_order(VS_value,Hue)    
     
-    while HSV_analysis == True:                   # flag on positive analysis is placed on true, and later evenbtually changed
+    while HSV_analysis == True:          # flag on positive analysis is placed on true, and later evenbtually changed
         
         # getting the white center's facelet and the colored facelets
         centers=[4, 13, 22, 31, 40, 49]                              # center facelet numbers
@@ -950,20 +1211,20 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
         centers.remove(white_center)                                 # white facelet center is removed from the list of facelets centers
         colored_centers=centers                                      # colored centers (without the white)
         
-        if debug:
-            print(f'\nWhite facelet: {white_center}')
-            print(f'\nCube_color_sequence: {cube_color_sequence}')
+        if debug:   # case the variable debug is set True
+            print(f'\nWhite facelet: {white_center}')                # feedback is printed to the terminal
+            print(f'\nCube_color_sequence: {cube_color_sequence}')   # feedback is printed to the terminal
         
         # searching all the 9 white facelets
-        Hw,Sw,Vw=HSV_detected[white_center]                              # HSV of the white center
-        if debug:
-            print(f'White Hw,Sw,Vw: {Hw}, {Sw}, {Vw}')                   # HSV of the white center
-            print(f'Colored center facelets: {colored_centers}')         # colored center facelets
+        Hw,Sw,Vw=HSV_detected[white_center]                          # HSV of the white center
+        if debug:   # case the variable debug is set True
+            print(f'White Hw,Sw,Vw: {Hw}, {Sw}, {Vw}')               # HSV of the white center
+            print(f'Colored center facelets: {colored_centers}')     # colored center facelets
 
-        VSdelta={}                                                       # dict to store the V-S (value-Satuartion) value of all facelets
+        VSdelta={}                                                   # dict to store the V-S (value-Satuartion) value of all facelets
         i=0
-        for H,S,V in HSV_detected.values():                              # Hue, Saturation and Value are retrieved from the HSV dict
-            VSdelta[i]=int(V)+int(V)-int(S)-abs(3*(int(H)-int(Hw)))      # V+(V-S)+abs(3*deltaH) value for all the facelets
+        for H,S,V in HSV_detected.values():                          # Hue, Saturation and Value are retrieved from the HSV dict
+            VSdelta[i]=int(V)+int(V)-int(S)-abs(3*(int(H)-int(Hw)))  # V+(V-S)+abs(3*deltaH) value for all the facelets
             i+=1
         
         # ordering the VSdelta by increasing values (9 highest values are the 9 white facelets)
@@ -974,9 +1235,9 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
         key_ordered_by_VSdelta = [x for x in VSdelta_ordered.keys()]    # list with the key of the (ordered) dict is generated
         white_facelets_list=key_ordered_by_VSdelta[-9:]                 # white facelets have the biggest H-S value, therefore are the last 9
 
-        if debug:
-            print(f'White facelets: {white_facelets_list}')
-            print(f'\nHue dict all facelets {Hue}')
+        if debug:   # case the variable debug is set True
+            print(f'White facelets: {white_facelets_list}')   # feedback is printed to the terminal
+            print(f'\nHue dict all facelets {Hue}')           # feedback is printed to the terminal
         
         
         white_facelets={}  # empty dict to store the association of facelet position for the white facelets
@@ -990,8 +1251,8 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
                 HSV_analysis = False
                 break
         
-        if debug:
-            print(f'\nHue dict colored facelets {Hue}')
+        if debug:   # case the variable debug is set True
+            print(f'\nHue dict colored facelets {Hue}')    # feedback is printed to the terminal)
         
         # facelet's color selection by Hue distance from each center's Hue
         centers=[4,13,22,31,40,49]                                # facelets of centers
@@ -1003,13 +1264,13 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
             Hcenters=[Hue[x] for x in colored_centers]            # list of Hue values for the colored centers
             # an error can happen if the same cube side has been showed twice or more
         except:
-            if debug:
-                print('\nNot found 6 different colors at center facelets')
+            if debug:   # case the variable debug is set True
+                print('\nNot found 6 different colors at center facelets')   # feedback is printed to the terminal
             HSV_analysis=False
             break
         
-        if debug:
-            print(f'\nHcenters (no white): {Hcenters}')
+        if debug:   # case the variable debug is set True
+            print(f'\nHcenters (no white): {Hcenters}')    # feedback is printed to the terminal
         
         Hc_red=Hue[colored_centers[cube_color_sequence_no_white.index('red')]]     # Hue value for the red center facelet
         Hc_blue=Hue[colored_centers[cube_color_sequence_no_white.index('blue')]]   # Hue value for the blue center facelet
@@ -1042,23 +1303,23 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
         cube_status_detected={k: v for k, v in sorted(cube_status_detected.items(), key=lambda item: item[0])}   # dict with white & color ordered by facelets
 
         # cube can be presented to the laptop camera on a different color order than used by Kociemba solver
-        std_cube_color=['white', 'red', 'green', 'yellow', 'orange', 'blue']               # conventional color sequence for kociemba solver
+        std_cube_color=['white', 'red', 'green', 'yellow', 'orange', 'blue']             # conventional color sequence for kociemba solver
         if cube_color_sequence != std_cube_color:
-            cube_status_kociemba={}                                                        # dict with cube status using conventional colors
+            cube_status_kociemba={}                                                      # dict with cube status using conventional colors
             i=0
-            for color in cube_status_detected.values():                                    # iteration on dict with detected colors
-                cube_status_kociemba[i]=std_cube_color[cube_color_sequence.index(color)]   # colors are exchanged, and assigned to the dict for solver
+            for color in cube_status_detected.values():                                  # iteration on dict with detected colors
+                cube_status_kociemba[i]=std_cube_color[cube_color_sequence.index(color)] # colors are exchanged, and assigned to the dict for solver
                 i+=1
-            if debug:
-                print(f'\nCube_status_detected_colors: {cube_status_detected}')
-                print(f'\nCube_status_conventional_colors: {cube_status_kociemba}\n')
+            if debug:   # case the variable debug is set True
+                print(f'\nCube_status_detected_colors: {cube_status_detected}')          # feedback is printed to the terminal
+                print(f'\nCube_status_conventional_colors: {cube_status_kociemba}\n')    # feedback is printed to the terminal
             break # wrong indentation until 22 May 2022
             
         elif cube_color_sequence == std_cube_color:
             cube_status_kociemba=cube_status_detected
-            if debug:
-                print('\nCube colors and orientation according to kociemba order')
-                print(f'\nCube_status_detected_colors: {cube_status_detected}\n')
+            if debug:   # case the variable debug is set True
+                print('\nCube colors and orientation according to kociemba order')       # feedback is printed to the terminal
+                print(f'\nCube_status_detected_colors: {cube_status_detected}\n')        # feedback is printed to the terminal
             break # wrong indentation until 22 May 2022
     
     if HSV_analysis==False:
@@ -1075,7 +1336,7 @@ def cube_colors_interpreted_HSV(BGR_detected, HSV_detected):
 
 
 
-def cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame, font, fontScale, lineType):
+def cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame, font,                                    fontScale, lineType, color_detection_winner):
     ''' Based on the detected cube status, a sketch of the cube is plot with bright colors.''' 
     
     x_start=int(edge/3)     # top lef corner of the rectangle where all the cube's faces are plot
@@ -1086,6 +1347,7 @@ def cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame
     m = int(edge/4)         # m=margin around the cube reppresentation 
     cv2.rectangle(frame, (x_start-m, y_start-2*edge), (x_start+13*d, int(y_start+9.2*d)), (230,230,230), -1) #gray background
     cv2.putText(frame, 'Interpreted:', (x_start, y_start-int(0.5*d)), font, fontScale*0.85,(0,0,0),lineType)
+    cv2.putText(frame, color_detection_winner, (x_start+int(6.5*d), y_start+int(2.5*d)), font, fontScale*0.75,(0,0,0),lineType)
 
     cube_bright_colors = {'white':(255,255,255), 'red':(0,0,204), 'green':(0,132,0), 'yellow':(0,245,245),
                           'orange':(0,128,255), 'blue':(204,0,0)}
@@ -1097,8 +1359,8 @@ def cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame
         B,G,R = cube_bright_colors[col]                           # decorating a cube reppresentation with bright colors
         start_point=square_dict[i]                                # top-left poiint coordinate
         cv2.rectangle(frame, tuple(start_point), (start_point[0]+edge, start_point[1]+edge), (0, 0, 0), 1) # squre black frame
-        inner_points=inner_square_points(square_dict,i,edge)            # array with the 4 square inner vertex coordinates
-        cv2.fillPoly(frame, pts = [inner_points], color=(B,G,R))        # inner square is colored with interpreted color           
+        inner_points=inner_square_points(square_dict,i,edge)      # array with the 4 square inner vertex coordinates
+        cv2.fillPoly(frame, pts = [inner_points], color=(B,G,R))  # inner square is colored with interpreted color           
         i+=1
 
 
@@ -1248,22 +1510,45 @@ def CIEDE2000(Lab_1, Lab_2):
 
 def decoration(deco_info):
     ''' Plot the cube's status made by a collage of images taken along the facelets color detection
-    On the collage is also proposed the cube's sketches made with detected and interpreted colors
+    On the collage it is also proposed the cube's sketches made with detected and interpreted colors
     This picture collage is saved as image, by adding date and time on the file name as reference.'''
     
-    fixWindPos, frame, faces, edge, cube_status, cube_color_sequence, kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time, timestamp = deco_info
+    fixWindPos, frame, faces, edge, cube_status, cube_color_sequence, kociemba_facelets_BGR_mean = deco_info[:7]
+    font, fontScale, lineType, show_time, timestamp, color_detection_winner = deco_info[7:]
+
     resume_width = int(13*edge)
     resume_height = 29*edge
     cv2.rectangle(frame, (0, 0), (resume_width, resume_height), (230, 230, 230), -1)    # gray background for the cube sketch
     plot_colors(kociemba_facelets_BGR_mean, edge, frame, font, fontScale, lineType)     # plot a cube decoration with detected colors
-    cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame, font, fontScale, lineType)       # cube sketch with with (bright) colors interpreted
+    
+    cube_colors_interpreted_sketch(cube_status, cube_color_sequence, edge, frame, font,
+                                   fontScale, lineType, color_detection_winner)       # cube sketch with with (bright) colors interpreted
 
     # frame slice, with the sketches of detected and interpreted colours
     faces[7] = frame[3*edge:resume_height, :resume_width] 
     
-    collage=faces_collage(faces)                 # collage function is called
-
-
+    collage=faces_collage(faces)                     # collage creation function is called
+    
+    # saving the collage image to a local folder
+    import os                                        # os is imported to ensure the folder check/make
+    folder = os.path.join('.','CubesStatusPictures') # folder to store the collage pictures
+    if not os.path.exists(folder):                   # if case the folder does not exist
+        os.makedirs(folder)                          # folder is made
+    
+    timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S') # date_time variable for file name purpose
+    fname = 'cube_collage_'+timestamp+'.png'          # filename with timestamp for the resume picture
+    fname = os.path.join(folder, fname)              # folder+filename with timestamp for the resume picture
+    
+    if color_detection_winner == 'Error':            # case there is a detection Error'
+        print('cube status not coherent')            # feedback is printed to the terminal
+    elif color_detection_winner == 'BGR':            # case the cube is correctly detected via 'BGR'
+        print('cube status detected via BGR color distance')  # feedback is printed to the terminal
+    elif color_detection_winner == 'HSV':            # case the cube is correctly detected via 'HSV'
+        print('cube status detected via HSV color analysis')  # feedback is printed to the terminal
+    print('Cube status image saved at: ', fname, '\n') # feedback is printed to the terminal
+    status=cv2.imwrite(fname, collage)               # cube sketch with detected and interpred colors is saved as image
+    
+    # showing the collage image on screen
     if fixWindPos:
         cv2.namedWindow('cube_collage')              # create the collage window
         cv2.moveWindow('cube_collage', 0,0)          # move the collage window to (0,0)
@@ -1273,6 +1558,7 @@ def decoration(deco_info):
         cv2.destroyWindow('cube_collage')            # cube window is closed via esc button          
 
     try: cv2.destroyWindow('cube_collage')           # cube window is closed at function end
+
     except: pass
 
 
@@ -1431,13 +1717,13 @@ def average_color(image, x, y):
     num=4*edge*edge                      # amount of pixels in the image square under analysis    
     
     # for debug purpose it is drawn the contour of the used area where the facelet's color is averaged 
-    if debug:
-        tl=(x-edge, y-edge)                  # top left coordinate 
-        tr=(x+edge, y-edge)                  # top right coordinate 
-        br=(x+edge, y+edge)                  # bottom left coordinate 
-        bl=(x-edge, y+edge)                  # bottom left coordinate 
-        pts=np.array([tl, tr, br, bl])       # array of coordinates
-        contour = [pts]                      # list is made with the array of coordinates
+    if debug:                            # case the debug variable is set True
+        tl=(x-edge, y-edge)              # top left coordinate 
+        tr=(x+edge, y-edge)              # top right coordinate 
+        br=(x+edge, y+edge)              # bottom left coordinate 
+        bl=(x-edge, y+edge)              # bottom left coordinate 
+        pts=np.array([tl, tr, br, bl])   # array of coordinates
+        contour = [pts]                  # list is made with the array of coordinates
         cv2.drawContours(frame, contour, -1, (230, 230, 230), 2)  # a white polyline is drawn on the contour (2 px thickness)
     
     #Return the sqrt of the mean of squared B, G, and R sums 
@@ -1454,11 +1740,6 @@ def read_color(facelets, candidates, BGR_mean, H_mean, wait=20, index=0):
     Draw the contour used on each facelect (eventually the facelet number), to feedback on correct facelet reading/ordering
     Wait is the time (in ms) to keep each facelet visible while the remaining frame is forced black
     The fuction returns (or updates) global variables, like BGR_mean, hsv, hue, s, v, H_mean.'''
-    
-    if debug:
-        img=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)      # frame's image is converted to RGB and plotted via matplotlib 
-        imgplot = plt.imshow(img)                       # frame's image is converted to RGB and plotted via matplotlib 
-        plt.show()                                      # frame's image is converted to RGB and plotted via matplotlib 
     
     for facelet in facelets:                              # iteration over the 9 facelets just detedcted
         contour = facelet.get('contour')                  # contour of the facelet under analysis
@@ -1603,10 +1884,10 @@ def window_for_cube_rotation(w, h, side, frame):
         prevent re-capturing already detected facelets one more time, by simply re-freshing
         the frame with a new camera read.'''
     
-    side+=1                                                # cube side is increased
+    side+=1                                            # cube side is increased
     
-    if debug:
-        print(f'Rotate the cube to side {sides[side]}')
+    if debug:    # case the debug variable is set True
+        print(f'Rotate the cube to side {sides[side]}')# feedback is printed to the terminal
     time.sleep(0.6)                                    # freeze the program while user realizes the cube has been fully read 
 
     
@@ -1614,11 +1895,11 @@ def window_for_cube_rotation(w, h, side, frame):
     frame, w, h = read_camera()
     
     if fixWindPos:
-        cv2.namedWindow('cube')                        # create the cube window
-        cv2.moveWindow('cube', 0,0)                    # move the window to (0,0)
-    cv2.imshow('cube', frame)                          # frame is showed to viewer
+        cv2.namedWindow('cube')        # create the cube window
+        cv2.moveWindow('cube', 0,0)    # move the window to (0,0)
+    cv2.imshow('cube', frame)          # frame is showed to viewer
     
-    return side                                            # return the new cube side to be anayzed
+    return side                        # return the new cube side to be anayzed
 
 
 
@@ -1749,19 +2030,9 @@ def start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets):
     # global variables
     global font, fontScale, fontColor, lineType, camera, width, height, sv, quitting
     global sides, side, BGR_mean, H_mean, kociemba_facelets_BGR_mean, edge, offset, faces, w, h, background_h
-    global first_cycle, plt, k_kernel, d_iterations, e_iterations, facelets_in_width, crop_at_right
-    try:
-        global clear_output
-    except:
-        pass
+    global clear_output, first_cycle, plt, k_kernel, d_iterations, e_iterations, facelets_in_width, crop_at_right
 
-    side=0
-
-    if debug:
-        get_ipython().run_line_magic('matplotlib', 'inline')
-        import matplotlib.pyplot as plt           # matplotlib is used to plot camera images to the terminal while debugging
- 
-        
+    side=0        
 #     clear_terminal()                        # cleares the terminal
     first_cycle=True                              # variable to be used only at first program loop
     
@@ -1833,7 +2104,7 @@ def cubeAF():
 
         if side==0:
             side = window_for_cube_rotation(w, h, side, frame) # keeps video stream while suggesting which cube's face to show
-
+        
         (contours, hierarchy)=read_facelets()  # reads cube's facelets and returns the contours
         candidates = []                        # empties the list of potential contours
 
@@ -1855,12 +2126,12 @@ def cubeAF():
                 cv2.imshow('cube', frame)          # shows the frame 
                 key=cv2.waitKey(20)    # refresh time is minimized to 1ms (time mostly depends from all other functions)
 
-                if corners==4:                                         # contours with 4 corners are of interest
-                    facelets = get_facelets(contour, hierarchy)        # returns a dict with cube compatible contours
+                if corners==4:                                            # contours with 4 corners are of interest
+                    facelets = get_facelets(facelets, contour, hierarchy) # returns a dict with cube compatible contours
 
                 if len(facelets)==9:                                   # 9 contours have cube compatible characteristics
                     facelets = order_9points(facelets, new_center=[])  # contours are ordered from top left
-                    d_to_exclude = distance_deviation(facelets)   # facelets to remove due inter-distance not as regular 3x3 array
+                    d_to_exclude = distance_deviation(facelets, check='above') # facelets to remove due excess of inter-distance
                     if len(d_to_exclude)>=1:               # check if any contour is too far to be part of the cube
                         d_to_exclude.sort(reverse=True)    # reverse the contours order, for easier eliminations
                         for i in d_to_exclude:             # remove the contours too faar far to be part of the cube
@@ -1904,12 +2175,12 @@ def cubeAF():
                         cube_status_string = cube_string(cube_status)                 # cube string for the solver
                         solution, solution_Text = cube_solution(cube_status_string)   # Kociemba solver is called to have the solution string
                         color_detection_winner='BGR'                                  # variable used to log which method gave the solution
-                        if debug:
+                        if debug:                         # case the debug variable is set True
                             print(f'\nCube status (via BGR color distance): {cube_status_string}\n')
 
 
                         if solution_Text == 'Error':      # if colors interpretation on BGR color distance fail an attempt is made on HSV
-                            if debug:
+                            if debug:                     # case the debug variable is set True
                                 print(f'Solver return: {solution}\n')
                             cube_status, cube_status_HSV, cube_color_sequence = cube_colors_interpreted_HSV(kociemba_facelets_BGR_mean,
                                                                                 HSV_detected)  # cube string status with colors detected 
@@ -1919,32 +2190,38 @@ def cubeAF():
                             if solution_Text == 'Error':                 # in case color color detection fail also with HSV approach
                                 color_detection_winner='Error'           # the winner approach goes to error, for log purpose
                             else: 
-                                if debug:
+                                if debug:              # case the debug variable is set True
                                     print(f'\nCube status (via HSV color distance): {cube_status_string}')           # nice information to print at terminal, sometime useful to copy
                                     print(f'\nCube solution: {solution_Text}')          # nice information to print at terminal, sometime useful to copy 
-
-
+                    
                         elif solution_Text != '0 moves  ':                 # case of interest, the cube isn't already solved
-                            if debug:
-                                print(f'\nCube solution: {solution_Text}')     # nice information to print at terminal, sometime useful to copy 
+                            if debug:                  # case the debug variable is set True
+                                print(f'\nCube solution: {solution_Text}') # nice information to print at terminal, sometime useful to copy 
 
-                        if solution_Text == 'Error':                       # still an error after HSV color analysis
-                            deco_info=fixWindPos, frame, faces, edge, cube_status, cube_color_sequence, kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time, timestamp
+
+                        if solution_Text == 'Error':   # still an error after HSV color analysis
+                            show_time_ = show_time
+                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,                                         timestamp, color_detection_winner)
                             cv2.destroyWindow('cube')
                             decoration(deco_info) # Cube images as seen + sketch with recognized and interpreted colors          
                             window_for_cube_solving(solution_Text, w, h, side, frame)  # image stream while user manually solves the cube
                             side = 0
                             break 
                         
-                        elif solution_Text != 'Error':                       # still an error after HSV color analysis
-                            if debug:
-                                print(f'cube_status_string: {cube_status_string}')
+                        elif solution_Text != 'Error':  # no errors BGR or HSV color analysis
+                            show_time_ = 2
+                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,                                         timestamp, color_detection_winner)
+                            cv2.destroyWindow('cube')
+                            decoration(deco_info) # Cube images as seen + sketch with recognized and interpreted colors
+                            
+                            if debug:             # case the debug variable is set True
+                                print(f'cube_status_string: {cube_status_string}') # feedback is printed to the terminal
                             return cube_color_sequence, cube_status_string                                             
-
+                                
                 if fixWindPos:
-                    cv2.namedWindow('cube')      # create the cube window
-                    cv2.moveWindow('cube', 0,0)  # move the window to (0,0)
-                cv2.imshow('cube', frame)        # shows the frame
+                    cv2.namedWindow('cube')       # create the cube window
+                    cv2.moveWindow('cube', 0,0)   # move the window to (0,0)
+                cv2.imshow('cube', frame)         # shows the frame
     
     return cube_color_sequence, cube_status_string
 
@@ -1954,7 +2231,7 @@ def cubeAF():
 
 
 
-def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets):
+def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets, c_debug, c_estimate_fclts):
     ''' This function:
         starts up the CV part with related settings
         acquires the facelets status
@@ -1962,17 +2239,15 @@ def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets)
         returns the cube status if coherent
         shows the detected and interpreted colors if cube status not coherent.'''
     
-    global debug, fixWindPos
+    global debug, estimate_fclts, fixWindPos
     
-    debug=False                              # flag to enable/disable the debug related prints
-    fixWindPos=False                         # flag to fix the CV2 windows position, starting from coordinate 0,0
-    
+    debug = c_debug                       # flag to enable/disable the debug related prints
+    estimate_fclts = c_estimate_fclts     # flag to enable/disable the estimation on facelets position/contour 
+    fixWindPos = False                    # flag to fix the CV2 windows position, starting from coordinate 0,0,0
     start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets) # starts Webcam and other settings
-    ccs, cube_status_string = cubeAF()       # cube reading/solving function returning cube color sequence an cube status
-
-    quit_func()                              # quitting function is called
-    return ccs, cube_status_string           # function return 
-
+    ccs, cube_status_string = cubeAF()    # cube reading/solving function returning cube color sequence an cube status
+    quit_func()                           # quitting function is called
+    return ccs, cube_status_string        # function return 
 
 
 
@@ -1981,34 +2256,29 @@ def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets)
 
 if __name__ == '__main__':
     ''' This function is used for debug purpose, to test the webcam application.'''
-    
-    import sys
-    global debug, fixWindPos
-    
-    
-    debug=False                                 # flag to enable/disable the debug related prints
-    fixWindPos=True                             # flag to fix the CV2 windows position, starting from coordinate 0,0
-    
-    if debug:
-        print(f'\nDebug prints activated')
-    
-    if fixWindPos:
-        print(f'\nCV2 windows forced to top-left screen corner')
-#     cam_num=sys.argv[1]
-#     cam_width=sys.argv[2]
-#     cam_height=sys.argv[3]
-#     cam_crop_at_right=sys.argv[4]
-#     cam_facelets=sys.argv[5]
 
-    cam_num=0
-    cam_width=640
-    cam_height=360
-    cam_crop_at_right=0
-    cam_facelets=11
+    global debug, estimate_fclts, fixWindPos
     
-#     print(f'argument: {cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets}')
+    debug = False #True       # flag to enable/disable the debug related prints
+    estimate_fclts = True     # flag to enable/disable the estimation on facelets position/contour
+    fixWindPos = True         # flag to fix the CV2 windows position, starting from coordinate 0,0
+    
+    if debug:                 # case the debug variable is set True, in this __main__ function
+        print(f'Debug prints activated')                        # feedback is printed to the terminal
+    if estimate_fclts:        # case the estimate_fclts variable is set True, in this __main__ function
+        print(f'Facelets position estimation activated')        # feedback is printed to the terminal
+    if fixWindPos:            # case the fixWindPos variable is set True, in this __main__ function
+        print(f'CV2 windows forced to top-left screen corner')  # feedback is printed to the terminal
+    print('====================================================================================\n')
+
+    cam_num=0                 # cam 0 is tipically the integrated one
+    cam_width=640             # camera width 
+    cam_height=360            # camera height
+    cam_crop_at_right=0       # picture cropping at the right side
+    cam_facelets=11           # number of facelets per camera width, to set a wich distance facelets are detected
+    
     start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets)  # starts Webcam and other settings
-    ccs, cube_status_string = cubeAF()      # cube reading/solving function returning cube color sequence an cube status
-    ccs=tuple(ccs)                          # cube color sequence list is convered to tuple
-    quit_func()                             # quitting function is called
+    ccs, cube_status_string = cubeAF()  # cube reading/solving function returning cube color sequence and cube status
+    ccs=tuple(ccs)                      # cube color sequence list is convered to tuple
+    quit_func()                         # quitting function is called
 

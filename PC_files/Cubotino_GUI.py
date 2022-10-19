@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
 """
 #############################################################################################################
-# Andrea Favero          13 October 2022 
+# Andrea Favero          19 October 2022
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
@@ -65,7 +64,7 @@ if not solver_found and not twophase_solver_found:    # case no one solver has b
         print('\n(Kociemba) twophase solver not found')    # feedback is printed to the terminal
     quit()
 
-print()
+# print()
 
 
 # python libraries, normally distributed with python
@@ -258,11 +257,13 @@ serialData=False               # boolean variable to track when the serial data 
 robot_moves=""                 # string variable holding all the robot moves (robot manoeuvres)
 cube_status={}                 # dictionary variable holding the cube status, for GUI update to robot permutations
 left_moves={}                  # dictionary holding the remaining robot moves
+debug=False                    # enable/disable debug prints on terminal and on pictures
+estimate_fclts=False           # enable/disable the estimation of last two cube facelets position/contour
 
 timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')      # timestamp used on logged data and other locations
 
 
-# read settings from the text files, giving priority to personal settings, to prevent issues after a git update
+# read settings from text file, giving priority to personal settings (prevent issues after a git update)
 fname = os.path.join('.','Cubotino_settings_backup.txt')     # backup file with servos settings
 if os.path.isfile(fname):         # case the settings backup files exist (user have made personal settings)
     data = read_settings('Cubotino_settings_backup.txt')     # from servos backup txt file to list of settings
@@ -273,7 +274,7 @@ else:             # case the settings backup files do not exist (user has not ma
     if len(data) > 0:             # case the file reading returned a list of settings
         get_settings(data)        # call to the function that makes global these servos settings 
 
-# read settings from the text files, giving priority to personal settings, to prevent issues after a git update
+# read cam settings from text files, giving priority to personal settings (prevent issues after a git update)
 fname = os.path.join('.','Cubotino_cam_settings_backup.txt') # backup file with cam settings
 if os.path.isfile(fname):         # case the cam settings backup files exist (user have made personal settings)
     data = read_settings('Cubotino_cam_settings_backup.txt') # from cam backup txt file to list of settings
@@ -527,7 +528,7 @@ def solve():
                             color=gray_cols[base_cols.index(gui_canvas.itemcget(facelet_id[f][row][col], "fill"))]
                             gui_canvas.itemconfig(facelet_id[f][row][col], fill=color)
             except:
-                print("exception at row 410")
+                print("exception at row 531")
 
     elif not gui_scramble_var.get():             # case the scramble check box is not checked
         if cols == gray_cols.copy():             # case the cube sketch is made with gray colored facelets
@@ -539,7 +540,7 @@ def solve():
                             color=base_cols[gray_cols.index(gui_canvas.itemcget(facelet_id[f][row][col], "fill"))]
                             gui_canvas.itemconfig(facelet_id[f][row][col], fill=color)
             except:
-                print("exception at row 422")
+                print("exception at row 543")
                 
     for i in range(6):                   # iteration on six center facelets
         cols[i]= gui_canvas.itemcget(facelet_id[i][1][1], "fill")  # colors list updated as per center facelets on schreen
@@ -572,9 +573,7 @@ def solve():
             s_start = s.find('(')                                   # position of open parenthesys in data
             s_end = s.find(')')                                     # position of close parenthesys in data
             manoeuvres = s[s_start+1:s_end-1]                       # cube manoeuvres are sliced from the cube solution
-            show_text(f'Cube manoeuvres: {manoeuvres}\n\n')         # number of manoeuvres is printed on GUI text windows
-            
-
+            show_text(f'Cube manoeuvres: {manoeuvres}\n\n')         # number of manoeuvres is printed on GUI text windows   
         
     if not 'Error' in cube_solving_string and len(cube_solving_string)>4:   # case there is a cube to be solved
         pos=cube_solving_string.find('(')      # position of the "(" character in the string
@@ -585,6 +584,9 @@ def solve():
         robot_moves_dict, robot_moves, tot_moves = cm.robot_required_moves(solution, "")
         if not gui_scramble_var.get():                       # case the scramble check box is not checked
             show_text(f'Robot moves: {robot_moves}\n')       # robot moves string is printed on the text window
+            if debug:                                        # case the debug checkcutton is selected
+                print(f'Robot moves: {robot_moves}\n')       # feedback is printed to the terminal
+                
         else:                                                # case the scramble check box is checked
             show_text(f'Robot moves: As per random cube\n')  # robot moves string is printed on the text window
 
@@ -689,6 +691,10 @@ def random():
 
     redraw(str(fc))                          # cube sketch is re-freshed on GUI
     gui_read_var.set("screen sketch")        # "screen sketch" activated at radiobutton, as of interest when random()
+    if gui_scramble_var.get():               # case the scramble check box is checked
+        print("random cube for scrambling")  # feeback is printed to the terminal
+    else:
+        print("random cube on the screen sketch")# feeback is printed to the terminal
     solve()                                  # solve function is called, because of the random() cube request
     draw_cubotino_center_colors()            # draw the cube center facelets with related colors, at Cubotino sketch
     gui_buttons_state = gui_buttons_for_cube_status("active")    # GUI buttons (cube-status) are actived
@@ -873,8 +879,8 @@ def start_robot():
     else:
         task = "solving"
     
-    print("\n===========================================================================================")
-    print(f"{time.ctime()}: request the robot to start {task} the cube") # print to the terminal 
+#     print("\n====================================================================================")
+    print(f"{time.ctime()}: request the robot to start {task} the cube") # print to the terminal
     
     exception=False                                     # boolean to track the exceptions, set to false
     try:
@@ -905,7 +911,8 @@ def stop_robot():
         ser.write(("[stop]\n").encode())                # attempt to send the stop command to the robot
     except:
         print("\nexception raised while stopping the robot from GUI")     # print to the terminal 
-        pass     
+        pass
+#     print("\n====================================================================================")
     gui_robot_btn_update()                              # updates the cube related buttons status
 
 
@@ -1038,7 +1045,7 @@ def animate_cube_sketch(move_index):
 def cube_read_solve():
     """GUI button retrieve the cube status from the sketch on screen, and to return the solving string."""
 
-    global cols, gui_buttons_state    
+    global cols, gui_buttons_state  
     
     if not robot_working:                          # case the robot is not working
         gui_text_window.delete(1.0, tk.END)        # clears the text window
@@ -1052,6 +1059,7 @@ def cube_read_solve():
         var=gui_read_var.get()                     # get the radiobutton selected choice
 
         if "webcam" in var:                        # case the webcam is selected as cube status detection method
+            print("cube status via the webcam")    # feeback is printed to the terminal
             try:
                 empty()                            # empties the cube sketch on screen
                 cam_num = gui_webcam_num.get()     # webcam number retrieved from radiobutton
@@ -1059,13 +1067,13 @@ def cube_read_solve():
                 cam_hght = s_webcam_height.get()   # webcam heigth is retrieved from the slider
                 cam_crop = s_webcam_crop.get()     # pixels quantity to crop at the frame right side
                 w_fclts = s_facelets.get()         # max number of facelets in frame width (for the contour area filter)
-                
-                
+
+
                 webcam_cols=[]                     # empty list to be populated with the URFDLB colors sequence 
                 webcam_cube_status_string=''       # string, to hold the cube status string returned by the webcam app
-                
+
                 # cube color sequence and cube status are returned via the webcam application
-                webcam_cols, webcam_cube_status_string = cam.cube_status(cam_num,cam_wdth,cam_hght,cam_crop,w_fclts)
+                webcam_cols, webcam_cube_status_string = cam.cube_status(cam_num,cam_wdth,cam_hght,cam_crop,w_fclts, debug, estimate_fclts)
 
                 if len(webcam_cols)==6 and len(webcam_cube_status_string)>=54:  # case the app return is valid
                     cols = webcam_cols                        # global variable URFDLB colors sequence is updated
@@ -1078,6 +1086,10 @@ def cube_read_solve():
                 pass
 
         elif "screen" in var:                                 # case the screen sketch is selected on the radiobuttons
+            if gui_scramble_var.get():                        # case the scramble check box is checked
+                print("random cube for scrambling")           # feeback is printed to the terminal
+            else:
+                print("cube status defined via the screen sketch")# feeback is printed to the terminal
             try:
                 cube_defstr = get_definition_string()+"\n"    # cube status string is returned from the sketch on screen
             except:
@@ -1250,7 +1262,7 @@ def log_data():
     import os                                        # os is imported to ensure the folder check/make
     folder = os.path.join('.','data_log_folder')     # folder to store the collage pictures
     if not os.path.exists(folder):                   # if case the folder does not exist
-        os.makedirs(folder)                          # folder is made if it doesn't exist
+        os.makedirs(folder)                          # folder is made
 
     fname = os.path.join(folder,'Cubotino_log.txt')  # folder+filename
     
@@ -1296,6 +1308,35 @@ def log_data():
 
 
 
+
+def debug_check():
+    """update the global variable debug according to the checkbutton at settings window."""
+    global debug
+    if checkVar1.get()==1:
+        debug = True
+        print("debug printout active\n")
+    elif checkVar1.get()==0:
+        debug = False
+        print("debug printout not active\n")
+    else:
+        print("error on debug_check function\n")
+
+
+
+
+
+
+def estimate_fclts_check():
+    """update the global variable debug according to the checkbutton at settings window."""
+    global estimate_fclts
+    if checkVar2.get()==1:
+        estimate_fclts = True
+        print("estimated facelets position active\n")        
+    elif checkVar2.get()==0:
+        estimate_fclts = False
+        print("estimated facelets position not active")
+    else:
+        print("error on estimate_fclts_check function\n")
 
 
 # ################################### serial comunication related functions #############################################
@@ -1374,7 +1415,7 @@ def connection():
         b_refresh["state"] = "disable"              # refresch com button is disables
         b_drop_COM["state"] = "disable"             # drop down menu for ports is disabled
         port = clicked_com.get()                    # serial port is retrieved from the selection made on drop down menu
-        print(f"selected port: {port}")             # feedback print to the terminal
+        print(f"selected port: {port} \n")          # feedback print to the terminal
         
         try:                                        # serial port opening
             ser = serial.Serial(port,
@@ -1453,10 +1494,12 @@ def readSerial():
                     start_robot()                                     # call the robot start function
                 else:
                     print(f"cube_solving_string_robot received by the robot differs from :{cube_solving_string_robot}")
+                    print("====================================================================================")
 
 
             elif "stop" in received and robot_working==True:          # case 'stop' is in received: Robot been stopped
                 print("\nstop command has been received by the robot\n")  # feedback is printed to the terminal
+                print("====================================================================================")
                 robot_working=False                                   # boolean trcking the robot working is set False
                 end_method="stopped"                                  # variable tracking the end method
                 if '(' in received and ')' in received:               # case the dat contains open and close parenthesis
@@ -1495,6 +1538,7 @@ def readSerial():
                 
                 show_text(f"\n Cube {end_method} in: {robot_time} secs")  # feedback is showed on the GUI                
                 print(f"\nCube {end_method}, in: {robot_time} secs")      # feedback to the terminal
+                print("\n===========================================================================================")
                 gui_robot_btn_update()                                    # updates the cube related buttons status
 
 
@@ -2075,8 +2119,20 @@ b_send_settings.configure(font=("Arial", "11"))
 b_send_settings.grid(row=0, column=1, sticky="w", padx=20, pady=10)
 
 
+#### estimate facelets check button ####
+checkVar2 = tk.IntVar()
+c_estimate = tk.Checkbutton(settingWindow, text = "estimate facelets \n(beta version)", variable = checkVar2,
+                            command=estimate_fclts_check, onvalue = 1, offvalue = 0)
+c_estimate.configure(font=("Arial", "11"))
+c_estimate.grid(row=0, column=3, sticky="w", padx=20, pady=10)
 
 
+#### debug check button ####
+checkVar1 = tk.IntVar()
+c_debug = tk.Checkbutton(settingWindow, text = "debug print-out\n(webcam)", variable = checkVar1,
+                         command=debug_check, onvalue = 1, offvalue = 0)
+c_debug.configure(font=("Arial", "11"))
+c_debug.grid(row=0, column=4, sticky="w", padx=20, pady=10)
 
 
 #### servos min and max pulse width widgets ####
@@ -2114,7 +2170,7 @@ for servos_mode, servos_pw in servos_modes:
 gui_var_b_srv_pw.set(b_srv_pw_range)
 
 
-# button to process the servos pulse width changes
+# button to process the servos pulse width choice
 pw_update_btn = tk.Button(srv_pw_label, text="confirm\nchanges", height=2, width=18, state="active", command= pw_update)
 pw_update_btn.configure(font=("Arial", "12"))
 pw_update_btn.grid(row=2, column=5, sticky="w", padx=15, pady=10)
@@ -2328,5 +2384,6 @@ root.protocol("WM_DELETE_WINDOW", close_window)   # the function close_function 
 root.mainloop()                                   # tkinter main loop
 
 ########################################################################################################################
+
 
 
