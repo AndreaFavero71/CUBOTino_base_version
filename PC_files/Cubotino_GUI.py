@@ -212,8 +212,8 @@ def read_settings(file):
                             settings.append('large')   # string setting appends 'large' to the list of settings
                 if len(data)==0:                       # case no one setting has been added to the list
                     print("File", file, "does not contain settings")  # print a feedback to the terminal
-    except:                                            # case the tentative did not succeeded
-        print("Something is wrong with file:", file, "or file missed") # print a feedback to the terminal
+    except Exception as ex:                            # case the tentative did not succeeded
+        print("Something is wrong with file:", file, " or file missed:\r\n", ex)  # print a feedback to the terminal
     return settings                                    # returns the list of settings
 ########################################################################################################################
 
