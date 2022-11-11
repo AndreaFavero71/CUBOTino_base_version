@@ -215,6 +215,64 @@ def read_settings(file):
     except Exception as ex:                            # case the tentative did not succeeded
         print("Something is wrong with file:", file, " or file missed:\r\n", ex)  # print a feedback to the terminal
     return settings                                    # returns the list of settings
+
+
+
+
+
+
+def settings_update(data):
+    """starting from the revision 4.1 the settings has 18 parameters instead of 16.
+        When the project is updated via git pull update, the settings file are not overwritten.
+        This function adds the 17th and 18th parameter to the setting files.
+        The added parameters are those implicitly used up to the revision 4.0 """
+    
+    if str(data[-1]).isnumeric():           # check if last parameter is a number (situation up to ver 4.0)
+        data.append('small')                # 17th parameter is added to the setting files
+        data.append('small')                # 18th parameter is added to the setting files
+        data_save = str(data)               # list of parameters is converted to string
+        data_save=data_save.replace(" ","")                    # eventual empty spaces are removed from the data_save string
+        data_save=data_save.replace("[","(").replace("]",")")  # square parentheses are exchanged with round ones
+        try: 
+            with open("Cubotino_settings_backup.txt", "w") as f:  # open the servos settings text backup file in write mode
+                f.write(data_save)                                # data_save is saved
+            print("updated Cubotino_settings_backup.txt to be compatible with 4.1 and later versions")
+        except:
+            print("Something went wrong while updating Cubotino_settings_backup.txt file")
+        
+        try: 
+            with open("Cubotino_settings.txt", "w") as f:         # open the servos settings text file in write mode
+                f.write(data_save)                                # data_save is saved
+            print("updated Cubotino_settings.txt to be compatible with 4.1 and later versions")
+        except:
+            print("Something went wrong while updating Cubotino_settings.txt file")
+        return data    # updated parameters are returned
+        
+    else:              # this case should be hardly possible to get
+        print("ATTENTION: The code fails because of a Cubotino_GUI version change")
+        print("           and it look like the update to a version >4.1 encounters problems\n")
+        print("TIP: take note of the your settings at Cubotino_settings.txt, and")
+        print("     add at the end two times the parameter 'small' with comma separation")
+
+
+
+
+
+def wrong_settings_feedback(fname):
+    """ Printout feedback to the terminal when the settings file parameters are not correct and cannot be
+        corrected by the cose in a simple way."""
+    
+    print("\n\n\n===============================  ATTENTION  ==================================")
+    print("===============================  ATTENTION  ==================================")
+    print("  the file: ", fname)
+    print("  does not contain valid parameters")
+    print("  or there are too many or too less parameters\n")
+    print("  try to correct them, otherwise the code will keep crashing\n")
+    print("  the file should have between parenthese a list of 18 elements, similar to:")
+    print("  (54,68,76,0,900,1000,800,300,51,76,101,2,3,1100,1200,100,'small','small')")
+    print("==============================================================================")
+    print("==============================================================================\n\n\n")
+
 ########################################################################################################################
 
 
@@ -267,12 +325,26 @@ timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')      # timestamp used on
 fname = os.path.join('.','Cubotino_settings_backup.txt')     # backup file with servos settings
 if os.path.isfile(fname):         # case the settings backup files exist (user have made personal settings)
     data = read_settings('Cubotino_settings_backup.txt')     # from servos backup txt file to list of settings
-    if len(data) > 0:             # case the file reading returned a list of settings
-        get_settings(data)        # call the function that makes global these servos settings 
+    datalen = len(data)
+    if datalen > 0:               # case the file reading returned a list of settings
+        if datalen <= 15 or datalen == 17 or datalen >18: # case the valid parameters found are <=15, ==17, >18
+            wrong_settings_feedback(fname)  # a warning feedback is printed to the terminal
+        elif datalen == 16:       # case the file has 16 elements it likely belongs to ver < 4.1
+            data = settings_update(data)    # call a funtion that updates 'Cubotino_settings_backup.txt'
+        if len(data) == 18:       # case the file has 18 valid parameters, as it should be from V4.1
+           get_settings(data)     # call to the function that makes global these servos settings
+
 else:             # case the settings backup files do not exist (user has not made personal settings yet)
     data = read_settings('Cubotino_settings.txt') # from servos settings txt file to list of settings
-    if len(data) > 0:             # case the file reading returned a list of settings
-        get_settings(data)        # call to the function that makes global these servos settings 
+    datalen = len(data)
+    if datalen > 0:               # case the file reading returned a list of settings
+        if datalen <= 15 or datalen == 17 or datalen >18: # case the valid parameters found are <=15, ==17, >18
+            wrong_settings_feedback('./Cubotino_settings.txt')  # a warning feedback is printed to the terminal
+        elif datalen == 16:       # case the file has 16 elements it likely belongs to ver < 4.1
+            data = settings_update(data)    # call a funtion that updates 'Cubotino_settings.txt'
+        if len(data) == 18:       # case the file has 18 valid parameters, as it should be from V4.1
+           get_settings(data)     # call to the function that makes global these servos settings
+            
 
 # read cam settings from text files, giving priority to personal settings (prevent issues after a git update)
 fname = os.path.join('.','Cubotino_cam_settings_backup.txt') # backup file with cam settings
