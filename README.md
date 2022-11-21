@@ -17,7 +17,7 @@ Very high level notes:<br />
 - 3D print without support.<br />
 - Set the servo to their mid position.<br />
 - Verify the servos have 180deg range.<br />
-- For the rotating base (cube_holder) the servo must have at least 190deg rotation; If not check the instruction on how to proceed.<br /><br />
+- For the rotating base (cube_holder) the servo must have at least 190deg rotation; If not check the instruction on how to proceed.<br />
 - If you use macOS or Ubuntu, update RubikTwoPhase solver to latest version (v1.1.1, released on 16th Nov. 2022).<br /><br />
 
 
