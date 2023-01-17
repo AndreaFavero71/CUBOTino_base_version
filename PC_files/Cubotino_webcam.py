@@ -4,7 +4,7 @@
 
 ''' 
 #############################################################################################################
-#  Andrea Favero          19 October 2022
+#  Andrea Favero          rev. 17 January 2023
 #
 #  Script made to learn computer vision and to improve coding skills
 #
@@ -24,6 +24,7 @@
 #############################################################################################################
 '''
 
+
 import cv2
 import numpy as np
 import math
@@ -34,11 +35,11 @@ import datetime as dt
 
 try:
     import sys, platform
-    print('\n===================  webcam module AF (19 October 2022)  ===========================')
+    print('\n===================  webcam module AF (17 January 2023)  ===========================')
     print(f'Running on: {platform.system()}')         # print to terminal, the platform used
     print(f'Python version: {sys.version}')           # print to termina the python version
     print(f'CV2 version: {cv2.__version__}')          # print to terminal the cv2 version
-#     print('webcam module AF (18 October 2022)')       # print to terminal the webcam module importing
+    print()
 except:
     pass
 
@@ -46,7 +47,7 @@ except:
 # there are two import attempts for Kociemba solver
 try:                                                  # attempt
     import solver as sv                               # import Kociemba solver copied in robot folder
-    print('imported the installed twophase solver')   # feedback is printed to the terminal
+    print('\nimported the installed twophase solver')  # feedback is printed to the terminal
     solver_found = True                               # boolean to track no exception on import the copied solver
 except:                                               # exception is raised if no library in folder or other issues
     solver_found = False                              # boolean to track exception on importing the copied solver
@@ -54,13 +55,13 @@ except:                                               # exception is raised if n
 if not solver_found:                                  # case the library was not in folder
     try:                                              # attempt
         import twophase.solver as sv                  # import Kociemba solver installed
-        print('imported the copied twophase solver')  # feedback is printed to the terminal
+        print('\nimported the copied twophase solver') # feedback is printed to the terminal
         twophase_solver_found = True                  # boolean to track no exception on import the installed solver
     except:                                           # exception is raised if no library in venv or other issues
         twophase_solver_found = False                 # boolean to track exception on importing the installed solver
 
 if not solver_found and not twophase_solver_found:    # case no one solver has been imported
-    print('\n(Kociemba) twophase solver not found')   # feedback is printed to the terminal
+    print('\n(Kociemba) twophase solver not found') # feedback is printed to the terminal
 print('====================================================================================\n')
 
 
@@ -500,7 +501,7 @@ def estimate_facelets(facelets, angle):
 
 
 
-def read_facelets():
+def read_facelets(det_face_time, delay, proceed):
     ''' Function that uses cv2 to retrieve contours, from an image (called frame in this case)
     Contours are searched on the 'eroded edges' frame copy
     ROI (Region Of Interest) restricts the image to where the cube images really is
@@ -510,13 +511,21 @@ def read_facelets():
     Approximation (v2.CHAIN_APPROX_SIMPLE) reduces the amount of pixel down to only vertes
     Offset allows to use same coordinate related to the frame, on left not used to overlay info 
     background_h prevents searching for contours on the top text bandwidth.'''
+    
+    wait_time = int(delay-(time.time() - det_face_time)) + 1
+    
+    if wait_time > 0 and not proceed:
+        # informative text is added on frame top, as guidance and for decoration purpose
+        cv2.putText(frame, str(f'Prepare side {sides[side]}, reading in {wait_time} s'), (10, 30), font, fontScale*1.2,fontColor,lineType)
 
-    # informative text is added on frame top, as guidance and for decoration purpose
-    cv2.putText(frame, str(f'Reading side {sides[side]}'), (10, 30), font, fontScale*1.2,fontColor,lineType)
+        # informative text is added on frame bottom, as guidance
+        cv2.putText(frame, str('ESC to escape, spacebar to proceed'), (10, int(h-12)), font, fontScale*1.2,fontColor,lineType)
+    else:
+        # informative text is added on frame top, as guidance and for decoration purpose
+        cv2.putText(frame, str(f'Reading side {sides[side]}'), (10, 30), font, fontScale*1.2,fontColor,lineType)
 
-
-    # informative text is added on frame bottom, as guidance
-    cv2.putText(frame, str('ESC to escape'), (10, int(h-12)), font, fontScale*1.2,fontColor,lineType)
+        # informative text is added on frame bottom, as guidance
+        cv2.putText(frame, str('ESC to escape'), (10, int(h-12)), font, fontScale*1.2,fontColor,lineType)
 
     roi = frame.copy()[background_h:h, offset:w]  # roi is made on a slice from the copy of the frame image
 #         roi_height, roi_width, _ = roi.shape    # returns roi's dimensions
@@ -1115,7 +1124,7 @@ def retrieve_cube_color_order(VS_value,Hue):
     
     # searching for the red and orange cube's side
     for facelet in centers:                   # iteration on the 4 cube's remaining sides centers
-        if facelet<=27:            
+        if facelet<=27:        
             opp_facelet=facelet+27            # opposite side center facelet
         elif facelet>27:
             opp_facelet=facelet-27            # opposite side center facelet
@@ -1549,12 +1558,12 @@ def decoration(deco_info):
     status=cv2.imwrite(fname, collage)               # cube sketch with detected and interpred colors is saved as image
     
     # showing the collage image on screen
-    if fixWindPos:
+    if fixWindPos:                                   # case the fixWindPos variable is set true on __main__ 
         cv2.namedWindow('cube_collage')              # create the collage window
         cv2.moveWindow('cube_collage', 0,0)          # move the collage window to (0,0)
     cv2.imshow('cube_collage', collage)              # starting be status is shown
     key=cv2.waitKey(int(show_time*1000))             # showtime is trasformed from milliseconds to seconds
-    if key == 27 & 0xFF:                             # ESC button can be used to escape each window
+    if key == 27:                                    # ESC button can be used to escape each window
         cv2.destroyWindow('cube_collage')            # cube window is closed via esc button          
 
     try: cv2.destroyWindow('cube_collage')           # cube window is closed at function end
@@ -1568,11 +1577,11 @@ def decoration(deco_info):
 
 
 def faces_collage(faces):
-    ''' This function merges multipe pictures, and it returns a single image
-    The 6 cube faces images, taken while detecting the facelets colors, are used for this collage
+    ''' This function merges multipe pictures, and it returns a single image.
+    The 6 cube faces images, taken while detecting the facelets colors, are used for this collage.
     The Sketch with detected and interpreted cune is also used on this collage.
-    The 6 cube faces images are resized to a predefined dimension
-    Gray rectangles are generated and used to complete the picture
+    The 6 cube faces images are resized to a predefined dimension.
+    Gray rectangles are generated and used to complete the picture.
     Once the collage is made, the original dict of images is cleared, to save some memory.'''
     
     face_h = faces[1].shape[0]                                   # height of the cube's face1 image, still on memory
@@ -1590,8 +1599,6 @@ def faces_collage(faces):
     resume_h=3*face_h                       # resume image height, to occupy 3 cube's faces
     resume_w=int(3*face_h*resume_ratio)     # resume image width is calculated from the imposed height, by keeping aspect ratio
     resume_resized = cv2.resize(faces[7], (resume_w, resume_h), interpolation = cv2.INTER_AREA) # resume is resized to occupy a full 'column'   
-    
-    
     
     seq=[1,2,3,4,5,6]                       # faces order suggested to laptop camera follow kociemba order
 
@@ -1759,9 +1766,9 @@ def read_color(facelets, candidates, BGR_mean, H_mean, wait=20, index=0):
         hue, s, v = cv2.split(hsv)                            # HSV components are retrieved
         H_mean.append((hue[0][0]))                            # the (avg) Hue value is stored on a list
         
-        if fixWindPos:
-            cv2.namedWindow('cube')      # create the cube window
-            cv2.moveWindow('cube', 0,0)  # move the window to (0,0)
+#         if fixWindPos:                   # case the fixWindPos variable is set true on __main__ 
+#             cv2.namedWindow('cube')      # create the cube window
+#             cv2.moveWindow('cube', 0,0)  # move the window to (0,0)
         cv2.imshow('cube', roi)          # ROI is shortly display one facelet at the time
         cv2.waitKey(20)                  # this waiting time is meant as decoration to see each facelet being detected
 
@@ -1884,22 +1891,17 @@ def window_for_cube_rotation(w, h, side, frame):
         prevent re-capturing already detected facelets one more time, by simply re-freshing
         the frame with a new camera read.'''
     
-    side+=1                                            # cube side is increased
+    side+=1                         # cube side is increased
     
     if debug:    # case the debug variable is set True
         print(f'Rotate the cube to side {sides[side]}')# feedback is printed to the terminal
-    time.sleep(0.6)                                    # freeze the program while user realizes the cube has been fully read 
 
-    
     # a camera reading now prevents from re-using the previous frame, therefore from re-capturing the same facelets twice
     frame, w, h = read_camera()
     
-    if fixWindPos:
-        cv2.namedWindow('cube')        # create the cube window
-        cv2.moveWindow('cube', 0,0)    # move the window to (0,0)
-    cv2.imshow('cube', frame)          # frame is showed to viewer
+    cv2.imshow('cube', frame)       # frame is showed to viewer
     
-    return side                        # return the new cube side to be anayzed
+    return side                     # return the new cube side to be anayzed
 
 
 
@@ -1933,23 +1935,18 @@ def window_for_cube_solving(solution_Text, w, h, side, frame):
 
         font_k = 1
         cv2.putText(frame, str('ESC to escape, spacebar to proceed'), (10, int(h-12)), font, fontScale*font_k,fontColor,lineType)
-
-        if fixWindPos:
-            cv2.namedWindow('cube')      # create the cube window
-            cv2.moveWindow('cube', 0,0)  # move the window to (0,0)
         cv2.imshow('cube', frame)        # frame is showed to viewer
         key=cv2.waitKey(10)              # frame is refresched every 10ms, until keyboard
 
-        if cv2.getWindowProperty('cube', cv2.WND_PROP_VISIBLE) <1 or (key == 27 & 0xFF): # X on top bar or ESC button
+        if cv2.getWindowProperty('cube', cv2.WND_PROP_VISIBLE) <1 or (key == 27): # X on top bar or ESC button
             quit_func()                  # quitting function
             break
 
-        if key == 32 & 0xFF:        # spacebar is used to move on to the next cube's side
-            clear_terminal()        # cleares the terminal
+        if key == 32:               # spacebar is used to move on to the next cube's side   
+#             clear_terminal()        # cleares the terminal
             side=0                  # cube side is set to zero to start a new cycle
             BGR_mean.clear()        # empties the dict previoously filled with 54 facelets colors
             H_mean.clear()          # empties the dict previoously filled with 54 facelets Hue
-            return side             # return the new cube side (zero) to be anayzed
 
 
 
@@ -1988,8 +1985,16 @@ def quit_func():
     global quitting
     
     quitting = True                  # flag when quitting process (to prevent further camera reading while quitting)
-    cv2.destroyAllWindows()          # all cv2 windows are removed
-    close_camera()                   # webcam is close
+    
+    try:                             # tentative
+        cv2.destroyAllWindows()      # all cv2 windows are removed
+    except:                          # case of exception raised
+        pass                         # do nothing
+    
+    try:                             # tentative
+        close_camera()               # webcam is close
+    except:                          # case of exception raised
+        pass                         # do nothing
 
 
 
@@ -2001,7 +2006,7 @@ def camera_opened_check():
     ''' Verifies if the camera is opened (if it provides a feedback)
     Funtion returns a boolean.'''
 
-    return camera.isOpened()                  # checks if webcam is responsive or not
+    return camera.isOpened()         # checks if webcam is responsive or not
 
 
 
@@ -2013,10 +2018,10 @@ def close_camera():
     ''' Closes the camera object
     It's important to close the camera, if the script runs again.'''
     
-    try:
-        camera.release()                # if the program gets stuk it's because the camera remained open from previour run
-    except:
-        pass
+    try:                             # tentative
+        camera.release()             # if the program gets stuk it's because the camera remained open from previour run
+    except:                          # case of exception raised
+        pass                         # do nothing
 
 
 
@@ -2031,15 +2036,16 @@ def start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets):
     global font, fontScale, fontColor, lineType, camera, width, height, sv, quitting
     global sides, side, BGR_mean, H_mean, kociemba_facelets_BGR_mean, edge, offset, faces, w, h, background_h
     global clear_output, first_cycle, plt, k_kernel, d_iterations, e_iterations, facelets_in_width, crop_at_right
+    global solution_Text
 
-    side=0        
-#     clear_terminal()                        # cleares the terminal
-    first_cycle=True                              # variable to be used only at first program loop
+    
+    side=0                           # set the initial cube side (cube sides are 1 to 6, while zero is used as starting for other setting)
+    first_cycle=True                 # variable to be used only at first program loop
     
     # webcam relevant info are returned after cropping, resizing, etc
     camera, width, height = webcam(cam_num, cam_width, cam_height)
-    crop_at_right = cam_crop_at_right
-    edge = 14                                     # edge dimension of each facelet used on cube sketches
+    crop_at_right = cam_crop_at_right  # picture cropping at the right side
+    edge = 14                       # edge dimension of each facelet used on cube sketches
     sides={0:'Empty', 1:'U', 2:'R', 3:'F', 4:'D', 5:'L', 6:'B'}  # kociemba side order to follow, while detecting facelets colors
 
     # general parameters for facelet's edges detection
@@ -2050,15 +2056,15 @@ def start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets):
     # Amount of facelets in frame width, to determin the min/max acceptable contour's area
     facelets_in_width = cam_facelets
 
-
+    
     quitting = False
     font, fontScale, fontColor, lineType = text_font()         # setting text font paramenters
     BGR_mean=[]                      # empty list to be filled with with 54 facelets colors while reading cube status
     H_mean=[]                        # empty list to be fille18d with with 54 facelets HUE value, while reading cube status
     kociemba_facelets_BGR_mean=[]    # empty list to be filled with with 54 facelets colors, ordered according KOCIEMBA order
     faces={}                         # dictionary that store the image of each face
-    side=0                           # set the initial cube side (cube sides are 1 to 6, while zero is used as starting for other setting)
     offset=int(13 * edge)            # left part of the frame not usable for cube facelet detection, as used to depict the cube sketches
+    solution_Text = ''               # solution_Text is set to empty string
 
 
 
@@ -2068,68 +2074,83 @@ def start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets):
 
 def cubeAF():
     ''' This function is substantially the main function.
-    It covers all the different phases after the initial settings:
-        Camera setting for 1st side and remaining
-        Keeps interrogating the camera
-        Cube status detection
-        Cube solver call.'''
+        It covers all the different phases after the initial settings:
+        1) Camera setting for 1st side and remaining
+        2) Keeps interrogating the camera
+        3) Cube status detection
+        4) Cube solver call.'''
     
     global font, fontScale, fontColor, lineType, cap, width, height, h, w, sides, side
     global BGR_mean, H_mean, kociemba_facelets_BGR_mean, offset, frame, cube
-    global facelets, faces, start_time, servo, camera, fixWindPos
+    global facelets, faces, start_time, servo, camera, fixWindPos, solution_Text
     
-    cube_color_sequence = []
-    cube_status_string = ''
+    cube_color_sequence = []            # cube_color_sequence is set to empty list
+    cube_status_string = ''             # cube_status_string is set to empty string
     
-    if not camera_opened_check():          # case the camera is not responsive
-        print('\nCannot open camera')
-        quit_func()                        # script is closed
+    if not camera_opened_check():       # case the camera is not responsive
+        print('\nCannot open camera')   # feedback is printed
+        quit_func()                     # script is closed
     
-    if side==0:                       # side zero is used as starting phase, cube faces are numbered 1 to 6 
-        faces.clear()                 # empties the dict of images (6 sides) recorded during previous solving cycle 
-        show_time = 12                # showing time of the unfolded cube images (its initial status)
-        
+    frame, w, h = read_camera()         # video stream and frame dimensions
+    if fixWindPos:                      # case the fixWindPos variable is set true on __main__ 
+        cv2.namedWindow('cube')         # create the cube window
+        cv2.moveWindow('cube', 0,0)     # move the cube window to (0,0)
+        cv2.imshow('cube', frame)       # shows the frame
+    
+    
+    if side==0:                         # side zero is used as starting phase, cube faces are numbered 1 to 6 
+        faces.clear()                   # empties the dict of images (6 sides) recorded during previous solving cycle 
+        show_time = 12                  # showing time of the unfolded cube images (its initial status)
         timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')   # date_time variable is assigned, for file name and log purpose
         start_time = time.time()        # initial time is stored
-        det_face_time = time.time()     # reference time to prevent analysing twice the same face
+        det_face_time = time.time()     # reference time for starting faceletes detection
+        proceed = False                 # proceed variable is set False (variable to jump into facelet reading mode)
+        
 
     while quitting == False:            # substantially the main loop, it can be interrupted by quit_func() 
+        
         key = cv2.waitKey(150)          # refresh time, aand time to check keyboard
-        if key == 27 & 0xFF:            # ESC button method to close CV2 windows
+        if key == 32:                   # spacebar moves from preparing the cube to read facelets
+            if solution_Text != 'Error':  # case the solution_Text differs from 'Error'
+                proceed = True          # proceed variable is set True
+        elif key == 27:                 # ESC button method to close CV2 windows
             quit_func()                 # quit function is called
-            return cube_color_sequence, cube_status_string                      # function is closed
+            return cube_color_sequence, cube_status_string   # function is closed
             
         frame, w, h = read_camera()     # video stream and frame dimensions
         text_bg(frame, w, h)            # generates a rectangle as backgroung for text in Frame
 
-        if side==0:
+        if side==0:                     # case side equals zero
             side = window_for_cube_rotation(w, h, side, frame) # keeps video stream while suggesting which cube's face to show
+            
+        (contours, hierarchy)=read_facelets(det_face_time, delay, proceed)  # reads cube's facelets and returns the contours
         
-        (contours, hierarchy)=read_facelets()  # reads cube's facelets and returns the contours
         candidates = []                        # empties the list of potential contours
-
         if hierarchy is not None:              # analyze the contours in case these are previously retrieved
             hierarchy = hierarchy[0]           # only top level contours (no childs)
             facelets = []                      # empties the list of contours having cube's square characteristics
 
-            for component in zip(contours, hierarchy):   # each contour is analyzed   
+            for component in zip(contours, hierarchy):  # each contour is analyzed   
 
-                if key == 27 & 0xFF:           # ESC button method to close CV2 windows
+                if key == 27:                  # ESC button method to close CV2 windows
                     quit_func()                # quit function is called
-                    return cube_color_sequence, cube_status_string                     # function is closed
+                    return cube_color_sequence, cube_status_string  # function is closed
 
                 contour, hierarchy, corners = get_approx_contours(component)   # contours are approximated
 
-                if fixWindPos:
-                    cv2.namedWindow('cube')        # create the cube window
-                    cv2.moveWindow('cube', 0,0)    # move the cube window to (0,0)
-                cv2.imshow('cube', frame)          # shows the frame 
-                key=cv2.waitKey(20)    # refresh time is minimized to 1ms (time mostly depends from all other functions)
-
-                if corners==4:                                            # contours with 4 corners are of interest
+                cv2.imshow('cube', frame)      # shows the frame 
+                key=cv2.waitKey(20)            # refresh time set to 20ms (real time is longher)
+                
+                if time.time() < det_face_time + delay: # case the delay time is not elapsed yet
+                    if key == 32:              # case spacebar is pressed
+                        proceed = True         # proceed is set true (from preparing the cube to read facelets)
+                    if not proceed:            # cese proceed variable is False
+                        break                  # for loop is interrupted 
+                
+                if corners==4:                 # case contours has 4 corners
                     facelets = get_facelets(facelets, contour, hierarchy) # returns a dict with cube compatible contours
-
-                if len(facelets)==9:                                   # 9 contours have cube compatible characteristics
+                
+                if len(facelets)==9:           # 9 contours have cube compatible characteristics
                     facelets = order_9points(facelets, new_center=[])  # contours are ordered from top left
                     d_to_exclude = distance_deviation(facelets, check='above') # facelets to remove due excess of inter-distance
                     if len(d_to_exclude)>=1:               # check if any contour is too far to be part of the cube
@@ -2138,90 +2159,96 @@ def cubeAF():
                             facelets.pop(i)                # facelet is removed
 
                 
-                # case having 9 contours, within right characteristics
-                # the 2 secs time, from previous detection, is a filter to prevent reading the same face twice 
-                if len(facelets)==9 and time.time()>det_face_time+2:     
-                    det_face_time=time.time()   # face detection time stored as reference for the next one         
-                    
+                # case having 9 contours with right characteristics              
+                if len(facelets)==9:     
                     read_color(facelets, candidates, BGR_mean, H_mean)   # each facelet is read for color, decoration for the viewer is made
                     kociemba_facelets_BGR_mean = BGR_mean                # facelets are ordered as per kociemba order
                     plot_colors(kociemba_facelets_BGR_mean, edge, frame, font, fontScale, lineType) # plot a cube decoration with detected colors                
-                    faces = face_image(frame, facelets, side, faces)               # image of the cube side is taken for later reference
+                    faces = face_image(frame, facelets, side, faces)     # image of the cube side is taken for later reference
+                    det_face_time=time.time()          # face detection time stored as reference for the next one
+                    proceed = False                    # proceed is set false, fto force a delay on facelets detection at cube face changing
+                    cv2.imshow('cube', frame)          # shows the frame 
+                    key=cv2.waitKey(20)                # refresh time is minimized to 1ms (time mostly depends from other functions)
+                    if key == 27:                      # ESC button method to close CV2 windows
+                        quit_func()                    # quit function is called
+                        return cube_color_sequence, cube_status_string   # function is closed
 
-                    if fixWindPos:
-                        cv2.namedWindow('cube')      # create the cube window
-                        cv2.moveWindow('cube', 0,0)  # move the window to (0,0)
-                    cv2.imshow('cube', frame)        # shows the frame 
-                    key=cv2.waitKey(20)     # refresh time is minimized to 1ms (time mostly depends from other functions)
-                    if key == 27 & 0xFF:           # ESC button method to close CV2 windows
-                        quit_func()                # quit function is called
-                        return cube_color_sequence, cube_status_string                     # function is closed
-
-                    if side < 6:                           # actions when a face has been completely detected, and there still are other to come
-                        if fixWindPos:
-                            cv2.namedWindow('cube')        # create the cube window
-                            cv2.moveWindow('cube', 0,0)    # move the window to (0,0)
-                        cv2.imshow('cube', frame)          # frame is showed to viewer
-                        key=cv2.waitKey(20)                     # delay for viewer to realize the face is aquired
-                        if key == 27 & 0xFF:           # ESC button method to close CV2 windows
+                    
+                    if side < 6:  # actions when a face has been completely detected, and there still are other to come    
+                        cv2.imshow('cube', frame)      # frame is showed to viewer
+                        key=cv2.waitKey(20)            # delay for viewer to realize the face is aquired
+                        if key == 27:                  # ESC button method to close CV2 windows
                             quit_func()                # quit function is called
-                            return cube_color_sequence, cube_status_string                     # function is closed
+                            return cube_color_sequence, cube_status_string   # function is closed
                         side = window_for_cube_rotation(w, h, side, frame) # image stream while viewer has time to positione the cube for next face
-                        break                              # with this break the process re-start from contour detection at the next cube face
+                        break                          # with this break the process re-starts from contour detection at the next cube face
 
 
-                    if side == 6:   # last cube's face is acquired   
-                        cube_status, HSV_detected, cube_color_sequence = cube_colors_interpreted(kociemba_facelets_BGR_mean)  # cube string status with colors detected 
-                        cube_status_string = cube_string(cube_status)                 # cube string for the solver
+                    if side == 6:  # case last cube's face is acquired
+                        
+                        # cube string status with colors detected 
+                        cube_status, HSV_detected, cube_color_sequence = cube_colors_interpreted(kociemba_facelets_BGR_mean)
+                        
+                        cube_status_string = cube_string(cube_status)  # cube string for the solver
                         solution, solution_Text = cube_solution(cube_status_string)   # Kociemba solver is called to have the solution string
-                        color_detection_winner='BGR'                                  # variable used to log which method gave the solution
+                        color_detection_winner='BGR'      # variable used to log which method gave the solution
+                        
                         if debug:                         # case the debug variable is set True
                             print(f'\nCube status (via BGR color distance): {cube_status_string}\n')
-
 
                         if solution_Text == 'Error':      # if colors interpretation on BGR color distance fail an attempt is made on HSV
                             if debug:                     # case the debug variable is set True
                                 print(f'Solver return: {solution}\n')
-                            cube_status, cube_status_HSV, cube_color_sequence = cube_colors_interpreted_HSV(kociemba_facelets_BGR_mean,
-                                                                                HSV_detected)  # cube string status with colors detected 
-                            cube_status_string = cube_string(cube_status)             # cube string for the solver
+                            
+                            # cube string status with colors detected 
+                            cube_status, cube_status_HSV, cube_color_sequence = cube_colors_interpreted_HSV(kociemba_facelets_BGR_mean,HSV_detected)
+                            
+                            cube_status_string = cube_string(cube_status)  # cube string for the solver
                             solution, solution_Text = cube_solution(cube_status_string)   # Kociemba solver is called to have the solution string
-                            color_detection_winner='HSV'                                  # variable used to log which method give the solution
-                            if solution_Text == 'Error':                 # in case color color detection fail also with HSV approach
-                                color_detection_winner='Error'           # the winner approach goes to error, for log purpose
+                            color_detection_winner='HSV'            # variable used to log which method give the solution
+                            
+                            if solution_Text == 'Error':            # in case color color detection fail also with HSV approach
+                                color_detection_winner='Error'      # the winner approach goes to error, for log purpose
                             else: 
-                                if debug:              # case the debug variable is set True
-                                    print(f'\nCube status (via HSV color distance): {cube_status_string}')           # nice information to print at terminal, sometime useful to copy
-                                    print(f'\nCube solution: {solution_Text}')          # nice information to print at terminal, sometime useful to copy 
+                                if debug:   # case the debug variable is set True
+                                    # nice information to print at terminal, sometime useful to copy
+                                    print(f'\nCube status (via HSV color distance): {cube_status_string}')
+                                    print(f'\nCube solution: {solution_Text}')
                     
                         elif solution_Text != '0 moves  ':                 # case of interest, the cube isn't already solved
-                            if debug:                  # case the debug variable is set True
+                            
+                            if debug:       # case the debug variable is set True
                                 print(f'\nCube solution: {solution_Text}') # nice information to print at terminal, sometime useful to copy 
 
 
                         if solution_Text == 'Error':   # still an error after HSV color analysis
-                            show_time_ = show_time
-                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,                                         timestamp, color_detection_winner)
-                            cv2.destroyWindow('cube')
-                            decoration(deco_info) # Cube images as seen + sketch with recognized and interpreted colors          
+                            show_time_ = show_time     # time to show on screen the decorative info (cube collage)
+                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,\
+                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,\
+                                         timestamp, color_detection_winner)
+                            
+                            cv2.destroyWindow('cube')   # cube window is closed
+                            decoration(deco_info)       # Cube images as seen + sketch with recognized and interpreted colors          
                             window_for_cube_solving(solution_Text, w, h, side, frame)  # image stream while user manually solves the cube
-                            side = 0
-                            break 
+                            side = 0                    # side is set to zero, to 
+                            det_face_time = time.time() # reference time for starting faceletes detection
+                            break                       # foor loop is interrupted
                         
                         elif solution_Text != 'Error':  # no errors BGR or HSV color analysis
-                            show_time_ = 2
-                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,                                         timestamp, color_detection_winner)
-                            cv2.destroyWindow('cube')
-                            decoration(deco_info) # Cube images as seen + sketch with recognized and interpreted colors
+                            show_time_ = 2              # time to show on screen the decorative info (cube collage)
+                            deco_info = (fixWindPos, frame, faces, edge, cube_status, cube_color_sequence,\
+                                         kociemba_facelets_BGR_mean, font, fontScale, lineType, show_time_,\
+                                         timestamp, color_detection_winner)
                             
-                            if debug:             # case the debug variable is set True
+                            cv2.destroyWindow('cube')   # cube window is closed   
+                            decoration(deco_info)       # Cube images as seen + sketch with recognized and interpreted colors
+                            
+                            if debug:                   # case the debug variable is set True
                                 print(f'cube_status_string: {cube_status_string}') # feedback is printed to the terminal
-                            return cube_color_sequence, cube_status_string                                             
-                                
-                if fixWindPos:
-                    cv2.namedWindow('cube')       # create the cube window
-                    cv2.moveWindow('cube', 0,0)   # move the window to (0,0)
-                cv2.imshow('cube', frame)         # shows the frame
+                            return cube_color_sequence, cube_status_string         # main cube info are returned                                    
+                 
+                # shows the frame
+                cv2.imshow('cube', frame)
     
     return cube_color_sequence, cube_status_string
 
@@ -2231,7 +2258,7 @@ def cubeAF():
 
 
 
-def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets, c_debug, c_estimate_fclts):
+def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets, c_debug, c_estimate_fclts, c_delay):
     ''' This function:
         starts up the CV part with related settings
         acquires the facelets status
@@ -2239,11 +2266,12 @@ def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets,
         returns the cube status if coherent
         shows the detected and interpreted colors if cube status not coherent.'''
     
-    global debug, estimate_fclts, fixWindPos
+    global debug, estimate_fclts, fixWindPos, delay
     
     debug = c_debug                       # flag to enable/disable the debug related prints
     estimate_fclts = c_estimate_fclts     # flag to enable/disable the estimation on facelets position/contour 
-    fixWindPos = False                    # flag to fix the CV2 windows position, starting from coordinate 0,0,0
+    delay = c_delay                       # delay for facelets detection at faces change 
+    fixWindPos = True                     # flag to fix the CV2 windows position, starting from coordinate 0,0,0
     start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets) # starts Webcam and other settings
     ccs, cube_status_string = cubeAF()    # cube reading/solving function returning cube color sequence an cube status
     quit_func()                           # quitting function is called
@@ -2256,26 +2284,33 @@ def cube_status(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets,
 
 if __name__ == '__main__':
     ''' This function is used for debug purpose, to test the webcam application.'''
-
-    global debug, estimate_fclts, fixWindPos
+    
+    global debug, estimate_fclts, fixWindPos, delay
     
     debug = False #True       # flag to enable/disable the debug related prints
     estimate_fclts = True     # flag to enable/disable the estimation on facelets position/contour
     fixWindPos = True         # flag to fix the CV2 windows position, starting from coordinate 0,0
+    delay = 5                 # delay time to start reading the facelets from a cube face change
+    
     
     if debug:                 # case the debug variable is set True, in this __main__ function
-        print(f'Debug prints activated')                        # feedback is printed to the terminal
+        print('Debug prints activated')   # feedback is printed to the terminal
+    
     if estimate_fclts:        # case the estimate_fclts variable is set True, in this __main__ function
-        print(f'Facelets position estimation activated')        # feedback is printed to the terminal
+        print('Facelets position estimation activated')  # feedback is printed to the terminal
+    
     if fixWindPos:            # case the fixWindPos variable is set True, in this __main__ function
-        print(f'CV2 windows forced to top-left screen corner')  # feedback is printed to the terminal
+        print('CV2 windows forced to top-left screen corner')  # feedback is printed to the terminal
+    
+    print(f'Delay of {delay} to start reading the facelets after a cube face change')   
+    
     print('====================================================================================\n')
 
     cam_num=0                 # cam 0 is tipically the integrated one
     cam_width=640             # camera width 
     cam_height=360            # camera height
     cam_crop_at_right=0       # picture cropping at the right side
-    cam_facelets=11           # number of facelets per camera width, to set a wich distance facelets are detected
+    cam_facelets=11           # number of facelets per camera width, to set at wich distance facelets are detected
     
     start_up(cam_num, cam_width, cam_height, cam_crop_at_right, cam_facelets)  # starts Webcam and other settings
     ccs, cube_status_string = cubeAF()  # cube reading/solving function returning cube color sequence and cube status

@@ -3,7 +3,7 @@
 
 """
 #############################################################################################################
-# Andrea Favero          19 October 2022
+# Andrea Favero          Rev. 17 January 2023
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
@@ -24,10 +24,69 @@
 #############################################################################################################
 """
 
+# __version__ variable
+version = '4.5'
+
+
+################  setting argparser ####################################################################################
+import argparse
+
+# argument parser object creation
+parser = argparse.ArgumentParser(description='Arguments for Cubotino_GUI')
+
+# --version argument is added to the parser
+parser.add_argument('-v', '--version', help='Display version.', action='version',
+                    version=f'%(prog)s ver:{version}')
+
+# --debug argument is added to the parser
+parser.add_argument("-d", "--debug", action='store_true',
+                    help="Activates printout of settings, variables and info for debug purpose.")
+
+# --estimate argument is added to the parser
+parser.add_argument("-e", "--estimate", action='store_true',
+                    help="Activates ehe estimation of last two cube facelets position/contour.")
+
+# --delay argument is added to the parser
+parser.add_argument("--delay", type=int,
+                    help=f"Enter the time (2 to 30s) to delay facelets detection at cube face change."
+                    " Default 10s if this argument is not used.")
+
+args = parser.parse_args()   # argument parsed assignement
+# ######################################################################################################################
+
+
+
+
+################  processing arguments  #################################################################################
+print('\n\n\n===================  Cubotino_GUI AF (17 January 2023)  ============================')
+debug = False                     # flag to enable/disable the debug related prints
+if args.debug != None:            # case 'debug' argument exists
+    if args.debug:                # case the Cubotone.py has been launched with 'debug' argument
+        debug = True              # flag to enable/disable the debug related prints is set True
+        print('Debug prints activated')   # feedback is printed to the terminal
+
+estimate_fclts = False            # flag to enable/disable the estimation of last two cube facelets position/contour
+if args.estimate != None:         # case 'estimate' argument exists
+    if args.estimate:             # case the Cubotino_GUI.py has been launched with 'estimate' argument
+        estimate_fclts = True     # flag to estimate last two cube facelets position/contour is set True
+        print('Facelets position estimation activated')  # feedback is printed to the terminal
+
+delay = 10                        # delay to facelets detection at faces change 
+if args.delay != None:            # case 'delay' argument exists
+    delay = abs(int(args.delay))  # delay to facelets detection at faces change e
+    if delay < 2:                 # case the provided time is smaller than 2 seconds
+        delay = 2                 # 2 seconds are assigned
+    elif delay > 30:              # case the provided time is bigger than 30 seconds
+        delay = 30                # 30 seconds are assigned
+if debug:                         # case debug has been activate
+    print(f'Delay of {delay}s to start reading the facelets after a cube face change')
+print()
+# ######################################################################################################################
+
+
 
 
 # ################################## Imports  ##########################################################################
-
 # custom libraries
 import Cubotino_webcam as cam           # recognize cube status via a webcam (by Andrea Favero)
 import Cubotino_moves as cm             # translate a cube solution into CUBOTino robot moves (by Andrea Favero)
@@ -72,7 +131,7 @@ import tkinter as tk                 # GUI library
 from tkinter import ttk              # GUI library
 import datetime as dt                # date and time library used as timestamp on a few situations (i.e. data log)
 import threading                     # threading library, to parallelize uart data 
-import time                          #  
+import time                          # time library is imported
 import os                            # os is imported to ensure the file presence, check/make
 
 # python library, to be installed (pyserial)
@@ -315,8 +374,6 @@ serialData=False               # boolean variable to track when the serial data 
 robot_moves=""                 # string variable holding all the robot moves (robot manoeuvres)
 cube_status={}                 # dictionary variable holding the cube status, for GUI update to robot permutations
 left_moves={}                  # dictionary holding the remaining robot moves
-debug=False                    # enable/disable debug prints on terminal and on pictures
-estimate_fclts=False           # enable/disable the estimation of last two cube facelets position/contour
 
 timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')      # timestamp used on logged data and other locations
 
@@ -587,8 +644,8 @@ def solve():
     global cols, sv, b_read_solve, cube_solving_string, cube_defstr
     global cube_status, robot_moves, tot_moves, previous_move
     
-    b_robot["state"] = "disable"         # GUI robot button is disabled at solve() function start
-    b_robot["relief"] = "sunken"         # GUI robot button is sunk at solve() function start
+    b_robot["state"] = "disable"                 # GUI robot button is disabled at solve() function start
+    b_robot["relief"] = "sunken"                 # GUI robot button is sunk at solve() function start
     
     if gui_scramble_var.get():                   # case the scramble check box is checked
         if cols != gray_cols.copy():             # case the cube sketch is not made with gray colored facelets
@@ -600,19 +657,19 @@ def solve():
                             color=gray_cols[base_cols.index(gui_canvas.itemcget(facelet_id[f][row][col], "fill"))]
                             gui_canvas.itemconfig(facelet_id[f][row][col], fill=color)
             except:
-                print("exception at row 531")
+                print("exception 1 at Cubotino_GUI.solve()")
 
     elif not gui_scramble_var.get():             # case the scramble check box is not checked
         if cols == gray_cols.copy():             # case the cube sketch is made with gray colored facelets
             cols = base_cols.copy()              # list with colors initially associated to the cube
             try:
-                for f in range(6):                   # iteration over the six cube faces
-                    for row in range(3):             # iteration over the three rows of facelets 
-                        for col in range(3):         # iteration over the three columns of facelets
+                for f in range(6):               # iteration over the six cube faces
+                    for row in range(3):         # iteration over the three rows of facelets 
+                        for col in range(3):     # iteration over the three columns of facelets
                             color=base_cols[gray_cols.index(gui_canvas.itemcget(facelet_id[f][row][col], "fill"))]
                             gui_canvas.itemconfig(facelet_id[f][row][col], fill=color)
             except:
-                print("exception at row 543")
+                print("exception 2 at Cubotino_GUI.solve()")
                 
     for i in range(6):                   # iteration on six center facelets
         cols[i]= gui_canvas.itemcget(facelet_id[i][1][1], "fill")  # colors list updated as per center facelets on schreen
@@ -626,14 +683,26 @@ def solve():
         cube_defstr = get_definition_string()+ "\n"      # cube status string is retrieved
         if not gui_scramble_var.get():                   # case the scramble check box is not checked
             show_text(f'Cube status: {cube_defstr}\n')   # cube status string is printed on the text window
+            if debug:                                    # case debug has been activate
+                if len(cube_defstr)>=54:                 # case the solution string has at least 54 characters
+                    print(f'cube status, from sketch on screen: {cube_defstr}')
         else:                                            # case the scramble check box is checked
-            show_text(f'Cube status: Random\n')          # random cube status is printed on the text window
+            show_text('Cube status: Random\n')           # random cube status is printed on the text window
+            if debug:                                    # case debug has been activate
+                print(f'cube status, from gray sketch on screen: {cube_defstr}')
+
+
+                
     except:                                              # case the cube definition string is not returned 
         show_text("Invalid facelet configuration.\nWrong or missing colors.")  # feedback to user
         return  # function is terminated
     
     # Kociemba TwophaseSolver, running locally, is called with max_length=18 or timeout=2s and best found within timeout
     cube_solving_string = sv.solve(cube_defstr.strip(), 18 , 2)
+    
+    if debug:   # case debug has been activate
+        print(f'cube solution string: {cube_solving_string}\n')     # feedback is printed to the terminal
+        
     
     if cube_defstr=="":                                             # case there is no cube status string
         show_text("Invalid facelet configuration.\nWrong or missing colors.")  # feedback to user
@@ -711,8 +780,8 @@ def empty():
     gui_text_window.delete(1.0, tk.END)   # clears the text window
     
     gui_scramble_var.set(0)
-    cols = base_cols.copy()              # list with colors initially associated to the cube
-    create_facelet_rects(width)          # cube sketch is refreshed
+    cols = base_cols.copy()               # list with colors initially associated to the cube
+    create_facelet_rects(width)           # cube sketch is refreshed
     
     for f in range(6):                    # iteration over the six cube faces
         for row in range(3):              # iteration over the three rows of facelets 
@@ -763,10 +832,14 @@ def random():
 
     redraw(str(fc))                          # cube sketch is re-freshed on GUI
     gui_read_var.set("screen sketch")        # "screen sketch" activated at radiobutton, as of interest when random()
+    print('\n\n\n\n\n\n\n\n')
     if gui_scramble_var.get():               # case the scramble check box is checked
-        print("random cube for scrambling")  # feeback is printed to the terminal
-    else:
-        print("random cube on the screen sketch")# feeback is printed to the terminal
+            # feeback is printed to the terminal
+            print('=============================   random cube for scrambling   ==============================')
+    else:                                    # case the scramble check box is not checked
+        # feeback is printed to the terminal
+        print('==========================   random cube on the screen sketch   ===========================')
+
     solve()                                  # solve function is called, because of the random() cube request
     draw_cubotino_center_colors()            # draw the cube center facelets with related colors, at Cubotino sketch
     gui_buttons_state = gui_buttons_for_cube_status("active")    # GUI buttons (cube-status) are actived
@@ -1130,8 +1203,11 @@ def cube_read_solve():
             gui_read_var.set("screen sketch")      # set the radiobutton to the screen sketch, as scrambling checkbutton               
         var=gui_read_var.get()                     # get the radiobutton selected choice
 
+        print('\n\n\n\n\n\n\n\n')
         if "webcam" in var:                        # case the webcam is selected as cube status detection method
-            print("cube status via the webcam")    # feeback is printed to the terminal
+            # feeback is printed to the terminal
+            print('=============================   cube status via the webcam   ==============================\n')
+
             try:
                 empty()                            # empties the cube sketch on screen
                 cam_num = gui_webcam_num.get()     # webcam number retrieved from radiobutton
@@ -1145,7 +1221,8 @@ def cube_read_solve():
                 webcam_cube_status_string=''       # string, to hold the cube status string returned by the webcam app
 
                 # cube color sequence and cube status are returned via the webcam application
-                webcam_cols, webcam_cube_status_string = cam.cube_status(cam_num,cam_wdth,cam_hght,cam_crop,w_fclts, debug, estimate_fclts)
+                webcam_cols, webcam_cube_status_string = cam.cube_status(cam_num, cam_wdth, cam_hght, cam_crop,\
+                                                                         w_fclts,debug, estimate_fclts, delay)
 
                 if len(webcam_cols)==6 and len(webcam_cube_status_string)>=54:  # case the app return is valid
                     cols = webcam_cols                        # global variable URFDLB colors sequence is updated
@@ -1154,14 +1231,19 @@ def cube_read_solve():
                     redraw(cube_defstr)                       # cube sketch on screen is updated to cube status string
                     draw_cubotino_center_colors()             # draw the cube center facelets with related colors
             except:
-                show_text(" Cube status not defined")         # cube status undefined is printed on the text window
+                if debug:
+                    show_text(" Cube status not defined")     # cube status undefined is printed on the text window
                 pass
 
         elif "screen" in var:                                 # case the screen sketch is selected on the radiobuttons
             if gui_scramble_var.get():                        # case the scramble check box is checked
-                print("random cube for scrambling")           # feeback is printed to the terminal
-            else:
-                print("cube status defined via the screen sketch")# feeback is printed to the terminal
+                # feeback is printed to the terminal
+                print('=============================   random cube for scrambling   ==============================\n')    
+            else:                                             # case the scramble check box is not checked
+                # feeback is printed to the terminal
+                print('======================   cube status defined via the screen sketch   ======================\n')    
+                    
+                    
             try:
                 cube_defstr = get_definition_string()+"\n"    # cube status string is returned from the sketch on screen
             except:
@@ -1368,7 +1450,7 @@ def log_data():
     e=str(robot_moves)                           # robot moves string
     f=str(tot_moves)                             # total amount of Cubotino moves 
     g=str(end_method)                            # cause of the robot stop
-    h=str(robot_time)                    # robot solving time (not the color reading part)
+    h=str(robot_time)                            # robot solving time (not the color reading part)
     s = a+'\t'+b+'\t'+c+'\t'+d+'\t'+e+'\t'+f+'\t'+g+'\t'+h+'\n'  # tab separated string with all the info to log
 
     # 'a'means the file will be generated if it does not exist, and data will be appended at the end
