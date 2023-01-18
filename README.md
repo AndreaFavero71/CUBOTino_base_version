@@ -12,7 +12,7 @@ Further robot info at: https://www.instructables.com/CUBOTino-a-Small-Simple-3D-
 
 
 # How to make the robot:
-All the needed info are collected in a pdf file in the /doc folder: [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20230117.pdf).<br /><br />
+All the needed info are collected in a pdf file in the /doc folder: [document here](doc/How_to_make_a_very_small_Rubik_cube_solver_robot_20230118.pdf).<br /><br />
 Very high level notes:<br />
 - 3D print without support.<br />
 - Set the servo to their mid position.<br />
