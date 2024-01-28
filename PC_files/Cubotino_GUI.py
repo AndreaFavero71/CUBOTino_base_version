@@ -3,7 +3,7 @@
 
 """
 #############################################################################################################
-# Andrea Favero          Rev. 17 January 2023
+# Andrea Favero          Rev. 17 January 2024
 # 
 # GUI for CUBOTino, a very small and simple Rubik's cube solver robot.
 # 
@@ -25,7 +25,7 @@
 """
 
 # __version__ variable
-version = '4.5'
+version = '4.6'
 
 
 ################  setting argparser ####################################################################################
@@ -58,7 +58,7 @@ args = parser.parse_args()   # argument parsed assignement
 
 
 ################  processing arguments  #################################################################################
-print('\n\n\n===================  Cubotino_GUI AF (17 January 2023)  ============================')
+print('\n\n\n===================  Cubotino_GUI AF (17 January 2024)  ============================')
 debug = False                     # flag to enable/disable the debug related prints
 if args.debug != None:            # case 'debug' argument exists
     if args.debug:                # case the Cubotone.py has been launched with 'debug' argument
@@ -342,6 +342,7 @@ def wrong_settings_feedback(fname):
 
 # width of a facelet in pixels, to draw the unfolded cube sketch
 width = 70                     # many other widgets and positions, are based to this variable
+gap = width//8                 # graphical gap between faces (to increase the gap reduces the denominator)
 
 facelet_id = [[[0 for col in range(3)] for row in range(3)] for fc in range(6)]    # list for the facelets GUI id
 colorpick_id = [0 for i in range(6)]                           # list for the colors GUI id
@@ -482,18 +483,18 @@ def create_facelet_rects(a):
     
     for f in range(6):                                   # iteration over the six cube faces
         for row in range(3):                             # iteration over three rows, of cube facelests per face
-            y = 20 + offset[f][1] * 3 * a + row * a      # top left y coordinate to draw a rectangule
+            y = 20 + offset[f][1] * 3 * a + row * a + offset[f][1]*gap      # top left y coordinate to draw a rectangule
             for col in range(3):                         # iteration over three columns, of cube facelests per face
-                x = 20 + offset[f][0] * 3 * a + col * a  # top left x coordinate to draw a rectangule
+                x = 20 + offset[f][0] * 3 * a + col * a + offset[f][0]*gap  # top left x coordinate to draw a rectangule
                 
                 # the list of graphichal facelets (global variable) is populated, and initially filled in grey color
                 facelet_id[f][row][col] = gui_canvas.create_rectangle(x, y, x + a, y + a, fill="grey65", width=2)
     
     for f in range(6):  # iteration over the 6 faces
-        gui_canvas.itemconfig(facelet_id[f][1][1], fill=cols[f]) # centers face facelets are colrored as per cols list
+        gui_canvas.itemconfig(facelet_id[f][1][1], fill=cols[f]) # centers face facelets are colored as per cols list
     
-    face_letters(a)   # call the function to place URFDLB letters on face center facelets
-    draw_cubotino()   # calls the funtion to draw Cubotino sketch
+    face_letters(a)       # call the function to place URFDLB letters on face center facelets
+    draw_cubotino()       # calls the funtion to draw Cubotino sketch
 
 
 
@@ -504,9 +505,9 @@ def face_letters(a):
     """ Add the face letter on central facelets."""
     
     offset = ((1, 0), (2, 1), (1, 1), (1, 2), (0, 1), (3, 1))  # coordinates (in cube face units) for cube faces position
-    for f in range(6):                                   # iteration over the six cube faces
-        y = 20 + offset[f][1] * 3 * a + a                # y coordinate for text placement
-        x = 20 + offset[f][0] * 3 * a + a                # x coordinate for text placement
+    for f in range(6):                                         # iteration over the six cube faces
+        y = 20 + offset[f][1] * 3 * a + a + offset[f][1]*gap   # y coordinate for text placement
+        x = 20 + offset[f][0] * 3 * a + a + offset[f][0]*gap   # x coordinate for text placement
         
         # each of the URFDLB letters are placed on the proper cuvbe face
         faceletter_id[f]=gui_canvas.create_text(x + width // 2, y + width // 2, font=("", 18), text=t[f], fill="black")
@@ -524,12 +525,12 @@ def create_colorpick(a):
     cp = tk.Label(gui_canvas, text="color picking")      # gui text label informing the color picking concept
     cp.config(font=("Arial", 18))                        # gui text font is set
     
-    # gui text label for colo picking info is placed on the canvas
-    hp_window = gui_canvas.create_window(int(8.25 * width), int(6.45 * width), anchor="nw", window=cp)
+    # gui text label for color picking info is placed on the canvas
+    hp_window = gui_canvas.create_window(2*gap+int(8.25 * width), 2*gap+int(6.45 * width), anchor="nw", window=cp)
     
     for i in range(6):                                   # iteration over the six cube faces
-        x = int((i % 3) * (a + 15) + 7.65 * a)           # x coordinate for a color palette widget
-        y = int((i // 3) * (a + 15) + 7 * a)             # y coordinate for a color palette widget
+        x = 2*gap + int((i % 3) * (a + 15) + 7.65 * a)   # x coordinate for a color palette widget
+        y = 2*gap + int((i // 3) * (a + 15) + 7 * a)     # y coordinate for a color palette widget
         
         # round widget, filled with color as per cols variable, and with tick border (20) of same gui background color
         colorpick_id[i] = gui_canvas.create_oval(x, y, x + a, y + a, fill=cols[i], width=20, outline="#F0F0F0")
@@ -2119,8 +2120,8 @@ except:
     pass
 
 
-app_width = 12*width+40+320               # GUI width is defined via the facelet width
-app_height = max(9*width+40,740)          # GUI height is defined via the facelet width, with a minimum size 670 pixels
+app_width = 12*width+3*gap+40+320               # GUI width is defined via the facelet width
+app_height = max(9*width+2*gap+40,740)          # GUI height is defined via the facelet width, with a minimum size 670 pixels
 root.minsize(int(0.9*app_width), int(0.9*app_height))       # min GUI size, limiting the resizing on screen
 root.maxsize(int(1.2*app_width), int(1.2*app_height))       # max GUI size, limiting the resizing on screen
 
@@ -2146,7 +2147,7 @@ for window in (mainWindow, settingWindow):     # iteration over the two defined 
 show_window(mainWindow)                        # the first window (mainWindow) is the one that will initially appear
 
 # the first window (mainWindow) is devided in 2 frames, a graphical one on the left and an interactibve one on the right'
-gui_f1 = tk.Frame(mainWindow, width= 12 * width + 20, height= 9 * width + 40)  # first frame (gui_f1), dimensions
+gui_f1 = tk.Frame(mainWindow, width= 12*width+3*gap+20, height= 9*width+2*gap+40)  # first frame (gui_f1), dimensions
 gui_f2 = tk.Frame(mainWindow, width= 3 * width, height= 9 * width + 40)        # second frame (gui_f2), dimensions
 gui_f1.grid(row=0, column=0,sticky="ns")      # frame1 takes the left side
 gui_f2.grid(row=0, column=1,sticky="ns")      # frame2 takes the right side
@@ -2154,7 +2155,7 @@ gui_f2.grid_rowconfigure(15, weight=1)        # frame2 uses 15 rows
 gui_f2.grid_columnconfigure(0, weight=1)      # frame2 uses 1 column
 
 # a canvas is made and positioned to fully cover frame gui_f1, in the mainWindow
-gui_canvas = tk.Canvas(gui_f1, width=12*width+20, height=9*width+40, highlightthickness=0)  # gui_canvas for most of the "graphic"
+gui_canvas = tk.Canvas(gui_f1, width=12*width+3*gap+20, height=9*width+2*gap+40, highlightthickness=0)  # gui_canvas for most of the "graphic"
 gui_canvas.pack(side="top", fill="both", expand="true")   # gui_canvas is packed in gui_f1
    
 root.bind("<Button-1>", click)                # pressing the left mouse button calls the click function
@@ -2171,7 +2172,7 @@ root.bind("<MouseWheel>", scroll)             # scrol up of the mouse wheel call
 
 # gui text windows for feedback messages
 gui_text_window = tk.Text(gui_canvas,highlightthickness=0)
-gui_text_window.place(x=20+6*width+10, y=20, height=3*width-10, width=6*width-10)
+gui_text_window.place(x=20+6*width+10+2*gap, y=20, height=3*width-10, width=6*width-10)
 
 
 # cube status and solve buttons
@@ -2237,7 +2238,7 @@ gui_prog_bar = ttk.Progressbar(gui_robot_label, orient="horizontal", length=175,
 gui_prog_bar.grid(column=0, row=12, sticky="w", padx=10, pady=10, columnspan=2)
 
 gui_prog_label_text = tk.StringVar()
-gui_prog_label = tk.Label(gui_robot_label, height=1, width=5, textvariable=gui_prog_label_text,                          font=("arial", 12), bg="#E6E6E6")
+gui_prog_label = tk.Label(gui_robot_label, height=1, width=5, textvariable=gui_prog_label_text, font=("arial", 12), bg="#E6E6E6")
 gui_prog_label.grid(column=1, sticky="e", row=12, padx=10, pady=10)
 
 b_settings = tk.Button(gui_robot_label, text="Settings window", height=1, width=26, state="disable",
